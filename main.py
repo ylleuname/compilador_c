@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Iterable, Dict, List, Tuple
-
+import ll1_check
+import predict
+import grammar
 #criar endif para o fim do IF
 #
 class TipoToken(Enum):
@@ -121,8 +123,9 @@ class Parser(Token):
             self.match(TipoToken.CHAVES_DIREITA)
         self.match(TipoToken.ENDIF)  # Adicionado 'endif'
 
- #x=1             x+1
+
     def statement(self):
+        #int x 
         if self.tokenAtual.tipo == TipoToken.INT:
             self.declaration_int()
             print("declaracao int")
@@ -162,10 +165,7 @@ class Parser(Token):
     def declaration_int(self):
         self.match(TipoToken.INT)
         self.match(TipoToken.IDENTIFICADOR)
-        if self.tokenAtual.tipo == TipoToken.FIM:
-            self.match(TipoToken.FIM)
-        elif self.tokenAtual.tipo == TipoToken.CHAVES_DIREITA:
-            self.match(TipoToken.CHAVES_DIREITA)
+        self.statementEnd()
 
     def declaration_float(self):
         self.match(TipoToken.FLOAT)
@@ -175,6 +175,7 @@ class Parser(Token):
         elif self.tokenAtual.tipo == TipoToken.CHAVES_DIREITA:
             self.match(TipoToken.CHAVES_DIREITA)
 
+    #x = 1
     def assignment(self):
         self.match(TipoToken.IDENTIFICADOR)
         self.match(TipoToken.ATRIBUICAO)
@@ -402,121 +403,137 @@ class Grammar:
     def tail(self, p: int, i:int) -> list:
         return self.__productions[p]['rhs'][i+1:]
 
-grammar = Grammar()
 
-# Definir os terminais
-grammar.add_terminal('INT')
-grammar.add_terminal('FLOAT')
-grammar.add_terminal('IDENTIFICADOR')
-grammar.add_terminal('ATRIBUICAO')
-grammar.add_terminal('SOMA')
-grammar.add_terminal('SUBTRACAO')
-grammar.add_terminal('MULTIPLICACAO')
-grammar.add_terminal('DIVISAO')
-grammar.add_terminal('IGUAL')
-grammar.add_terminal('DIFERENTE')
-grammar.add_terminal('MENOR')
-grammar.add_terminal('MAIOR')
-grammar.add_terminal('MENOR_IGUAL')
-grammar.add_terminal('MAIOR_IGUAL')
-grammar.add_terminal('SINAL_E')
-grammar.add_terminal('SINAL_OU')
-grammar.add_terminal('PARENTESES_ESQUERDO')
-grammar.add_terminal('PARENTESES_DIREITO')
-grammar.add_terminal('CHAVES_ESQUERDA')
-grammar.add_terminal('CHAVES_DIREITA')
-grammar.add_terminal('IF')
-grammar.add_terminal('ELSE')
-grammar.add_terminal('ENDIF')
-grammar.add_terminal('WHILE')
-grammar.add_terminal('FIM')
-grammar.add_terminal('INUM')
-grammar.add_terminal('FNUM')
+def build_grammar():
+  grammar = Grammar()
 
-# Definir os não-terminais
-grammar.grammar('program')
-grammar.add_nonterminal('statementList')
-grammar.add_nonterminal('statement')
-grammar.add_nonterminal('declaration')
-grammar.add_nonterminal('declaration_int')
-grammar.add_nonterminal('declaration_float')
-grammar.add_nonterminal('assignment')
-grammar.add_nonterminal('ifStatement')
-grammar.add_nonterminal('whileStatement')
-grammar.add_nonterminal('expression')
-grammar.add_nonterminal('relationalExpression')
-grammar.add_nonterminal('relationalOperator')
-grammar.add_nonterminal('logicalExpression')
-grammar.add_nonterminal('logicalOperator')
-grammar.add_nonterminal('simpleExpression')
-grammar.add_nonterminal('additiveOperator')
-grammar.add_nonterminal('term')
-grammar.add_nonterminal('multiplicativeOperator')
-grammar.add_nonterminal('factor')
+  # Definir os terminais
+  grammar.add_terminal('INT')
+  grammar.add_terminal('FLOAT')
+  grammar.add_terminal('IDENTIFICADOR')
+  grammar.add_terminal('ATRIBUICAO')
+  grammar.add_terminal('SOMA')
+  grammar.add_terminal('SUBTRACAO')
+  grammar.add_terminal('MULTIPLICACAO')
+  grammar.add_terminal('DIVISAO')
+  grammar.add_terminal('IGUAL')
+  grammar.add_terminal('DIFERENTE')
+  grammar.add_terminal('MENOR')
+  grammar.add_terminal('MAIOR')
+  grammar.add_terminal('MENOR_IGUAL')
+  grammar.add_terminal('MAIOR_IGUAL')
+  grammar.add_terminal('SINAL_E')
+  grammar.add_terminal('SINAL_OU')
+  grammar.add_terminal('PARENTESES_ESQUERDO')
+  grammar.add_terminal('PARENTESES_DIREITO')
+  grammar.add_terminal('CHAVES_ESQUERDA')
+  grammar.add_terminal('CHAVES_DIREITA')
+  grammar.add_terminal('IF')
+  grammar.add_terminal('ELSE')
+  grammar.add_terminal('ENDIF')
+  grammar.add_terminal('WHILE')
+  grammar.add_terminal('FIM')
+  grammar.add_terminal('INUM')
+  grammar.add_terminal('FNUM')
 
-grammar.add_production('program', ['statementList'])
-grammar.add_production('statementList', ['statement', 'statementList'])
-grammar.add_production('statementList', ['ε'])
-
-grammar.add_production('statement', ['declaration'])
-grammar.add_production('statement', ['ifStatement'])
-grammar.add_production('statement', ['whileStatement'])
-grammar.add_production('statement', ['assignment'])
-grammar.add_production('statement', ['expression', 'statementEnd'])
-grammar.add_production('statementEnd', ['FIM'])
-grammar.add_production('statementEnd', ['CHAVES_DIREITA'])
-grammar.add_production('statementEnd', ['ENDIF']) 
+  # Definir os não-terminais
+  grammar.grammar('program')
+  grammar.add_nonterminal('statementList')
+  grammar.add_nonterminal('statement')
+  grammar.add_nonterminal('declaration')
+  grammar.add_nonterminal('declarationList')
+  grammar.add_nonterminal('declaration_int')
+  grammar.add_nonterminal('declaration_float')
+  grammar.add_nonterminal('assignment')
+  grammar.add_nonterminal('ifStatement')
+  grammar.add_nonterminal('elseStatement')
+  grammar.add_nonterminal('whileStatement')
+  grammar.add_nonterminal('expression')
+  #grammar.add_nonterminal('relationalExpression')
+  grammar.add_nonterminal('relationalOperator')
+  grammar.add_nonterminal('logicalExpression')
+  grammar.add_nonterminal('logicalExpressionLinha')
+  grammar.add_nonterminal('logicalOperator')
+  grammar.add_nonterminal('simpleExpression')
+  grammar.add_nonterminal('additiveOperator')
+  grammar.add_nonterminal('term')
+  grammar.add_nonterminal('termLinha')
+  grammar.add_nonterminal('multiplicativeOperator')
+  grammar.add_nonterminal('factor')
+  grammar.add_nonterminal('simpleExpressionLinha')
 
 
-grammar.add_production('declaration', ['declaration_int'])
-grammar.add_production('declaration', ['declaration_float'])
-grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR', 'FIM'])
-grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR', 'CHAVES_DIREITA'])
-grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'FIM'])
-grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'CHAVES_DIREITA'])
+  grammar.add_production('program', ['declarationList','statementList'])
+# Declarações
+  grammar.add_production('declarationList', ['declaration', 'declarationList'])
+  grammar.add_production('declarationList', [])
+  grammar.add_production('declaration', ['declaration_int'])
+  grammar.add_production('declaration', ['declaration_float'])
+  grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR'])
+  grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR'])
 
-grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression', 'FIM'])
-grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression', 'CHAVES_DIREITA'])
+# Statements
+  grammar.add_production('statementList', ['statement', 'statementList'])
+  grammar.add_production('statementList', [])
 
-grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'ENDIF'])
-grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'ELSE', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'ENDIF'])
+  grammar.add_production('statement', ['ifStatement'])
+  grammar.add_production('statement', ['whileStatement'])
+  grammar.add_production('statement', ['assignment'])
+  grammar.add_production('statementEnd', ['FIM'])
+  grammar.add_production('statementEnd', ['CHAVES_DIREITA'])
+  grammar.add_production('statementEnd', ['ENDIF']) 
 
-grammar.add_production('whileStatement', ['WHILE', 'PARENTESES_ESQUERDO', 'relationalExpression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statement', 'CHAVES_DIREITA'])
+# Assignament
+  grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression'])
+# IF
+  grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'elseStatement','ENDIF'])
+# Else
+  grammar.add_production('elseStatement', ['CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA'])
+  grammar.add_production('elseStatement', [])
 
-grammar.add_production('expression', ['logicalExpression'])
+  grammar.add_production('whileStatement', ['WHILE', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA'])
 
-grammar.add_production('relationalExpression', ['simpleExpression', 'relationalOperator', 'simpleExpression'])
-grammar.add_production('relationalOperator', ['IGUAL'])
-grammar.add_production('relationalOperator', ['DIFERENTE'])
-grammar.add_production('relationalOperator', ['MENOR'])
-grammar.add_production('relationalOperator', ['MAIOR'])
-grammar.add_production('relationalOperator', ['MENOR_IGUAL'])
-grammar.add_production('relationalOperator', ['MAIOR_IGUAL'])
+  grammar.add_production('expression', ['logicalExpression'])
 
-grammar.add_production('logicalExpression', ['simpleExpression', 'logicalOperator', 'logicalExpression'])
-grammar.add_production('logicalExpression', ['simpleExpression'])
-grammar.add_production('logicalOperator', ['SINAL_E'])
-grammar.add_production('logicalOperator', ['SINAL_OU'])
+  """grammar.add_production('relationalExpression', ['simpleExpression', 'relationalOperator', 'simpleExpression'])
+  grammar.add_production('relationalOperator', ['IGUAL'])
+  grammar.add_production('relationalOperator', ['DIFERENTE'])
+  grammar.add_production('relationalOperator', ['MENOR'])
+  grammar.add_production('relationalOperator', ['MAIOR'])
+  grammar.add_production('relationalOperator', ['MENOR_IGUAL'])
+  grammar.add_production('relationalOperator', ['MAIOR_IGUAL'])"""
 
-grammar.add_production('simpleExpression', ['term', 'additiveOperator', 'simpleExpression'])
-grammar.add_production('simpleExpression', ['term'])
+  grammar.add_production('logicalExpression', ['simpleExpression', 'logicalExpressionLinha'])
+  grammar.add_production('logicalExpressionLinha', ['logicalOperator', 'simpleExpression'])
+  grammar.add_production('logicalExpressionLinha', [])
+  grammar.add_production('logicalOperator', ['SINAL_E'])
+  grammar.add_production('logicalOperator', ['SINAL_OU'])
 
-grammar.add_production('additiveOperator', ['SOMA'])
-grammar.add_production('additiveOperator', ['SUBTRACAO'])
+  grammar.add_production('simpleExpression', ['term', 'simpleExpressionLinha'])
+  grammar.add_production('simpleExpressionLinha', ['additiveOperator', 'simpleExpression'])
+  grammar.add_production('simpleExpressionLinha', [])
 
-grammar.add_production('term', ['factor', 'multiplicativeOperator', 'term'])
-grammar.add_production('term', ['factor'])
+  grammar.add_production('additiveOperator', ['SOMA'])
+  grammar.add_production('additiveOperator', ['SUBTRACAO'])
 
-grammar.add_production('multiplicativeOperator', ['MULTIPLICACAO'])
-grammar.add_production('multiplicativeOperator', ['DIVISAO'])
+  grammar.add_production('term', ['factor', 'multiplicativeOperator', 'term'])
+  grammar.add_production('termLinha', ['multiplicativeOperator', 'term'])
+  grammar.add_production('termLinha', [])
 
-grammar.add_production('factor', ['IDENTIFICADOR'])
-grammar.add_production('factor', ['INUM'])
-grammar.add_production('factor', ['FNUM'])
-grammar.add_production('factor', ['PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO'])
+  grammar.add_production('multiplicativeOperator', ['MULTIPLICACAO'])
+  grammar.add_production('multiplicativeOperator', ['DIVISAO'])
+
+  grammar.add_production('factor', ['IDENTIFICADOR'])
+  grammar.add_production('factor', ['INUM'])
+  grammar.add_production('factor', ['FNUM'])
+  #a linguagem não vai sustentar expressões lógicas com outra expressão lógica entre parênteses
+  return grammar
 
 def main():
-    entrada = "while(x==2){x=1}$"
+    g = build_grammar()
+    pred_alg = predict.predict_algorithm(g)
+    print(ll1_check.is_ll1(g,pred_alg))
+    entrada = "int x$"
     #entrada = 'a = 1'
     parser = Parser(entrada)
     try:
