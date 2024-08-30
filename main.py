@@ -119,6 +119,7 @@ class Parser(Token):
             self.statement()
         self.match(TipoToken.ENDIF)
 
+ #x=1             x+1
     def statement(self):
         if self.tokenAtual.tipo == TipoToken.INT:
             self.declaration_int()
@@ -140,7 +141,18 @@ class Parser(Token):
             self.whileStatement()
         else:
             self.expression()
+            self.statementEnd()
+
+    def statementEnd(self):
+        if self.tokenAtual.tipo == TipoToken.FIM:
             self.match(TipoToken.FIM)
+        elif self.tokenAtual.tipo == TipoToken.CHAVES_DIREITA:
+            self.match(TipoToken.CHAVES_DIREITA)
+        else:
+            raise SyntaxError(
+                "Erro de sintaxe: Esperado FIM ou CHAVES_DIREITA, "
+                f"Encontrado: {nomesTokens[self.tokenAtual.tipo.value - 1]}"
+            )
 
     # regra para aceitar declarações simples do tipo "int nome_variavel"
     def declaration_int(self):
@@ -170,30 +182,50 @@ class Parser(Token):
 
     # expressões lógicas agora têm prioridade menor que aritméticas
     def expression(self):
-        self.logicalExpression()
+        self.simpleExpression()
+        self.expressionLinha()
+
+    def expressionLinha(self):
         if self.tokenAtual.tipo in (TipoToken.IGUAL, TipoToken.DIFERENTE,
                                     TipoToken.MENOR, TipoToken.MAIOR,
                                     TipoToken.MENOR_IGUAL, TipoToken.MAIOR_IGUAL):
             self.consumir(self.tokenAtual.tipo)
-            self.logicalExpression()
+            self.simpleExpression()
+            self.expressionLinha()
 
     def logicalExpression(self):
-        self.simpleExpression()
-        while self.tokenAtual.tipo in (TipoToken.SINAL_E, TipoToken.SINAL_OU):
+        self.relationalExpression()
+        self.logicalExpressionLinha()
+
+    def logicalExpressionLinha(self):
+        if self.tokenAtual.tipo in (TipoToken.SINAL_E, TipoToken.SINAL_OU):
             self.consumir(self.tokenAtual.tipo)
-            self.simpleExpression()
+            self.relationalExpression()
+            self.logicalExpressionLinha()
 
     def simpleExpression(self):
         self.term()
-        while self.tokenAtual.tipo in (TipoToken.SOMA, TipoToken.SUBTRACAO):
+        self.simpleExpressionLinha()
+
+    def simpleExpressionLinha(self):
+        if self.tokenAtual.tipo in (TipoToken.SOMA, TipoToken.SUBTRACAO):
             self.consumir(self.tokenAtual.tipo)
             self.term()
+            self.simpleExpressionLinha()
+        else:
+            return
 
     def term(self):
         self.factor()
-        while self.tokenAtual.tipo in (TipoToken.MULTIPLICACAO, TipoToken.DIVISAO):
+        self.termLinha()
+
+    def termLinha(self):
+        if self.tokenAtual.tipo in (TipoToken.MULTIPLICACAO, TipoToken.DIVISAO):
             self.consumir(self.tokenAtual.tipo)
             self.factor()
+            self.termLinha()  # Recursão à direita
+        else:
+            return
 
     def factor(self):
         if self.tokenAtual.tipo in (
@@ -426,8 +458,9 @@ grammar.add_production('statement', ['declaration'])
 grammar.add_production('statement', ['ifStatement'])
 grammar.add_production('statement', ['whileStatement'])
 grammar.add_production('statement', ['assignment'])
-grammar.add_production('statement', ['simpleExpression', 'FIM'])
-grammar.add_production('statement', ['simpleExpression', 'CHAVES_DIREITA'])
+grammar.add_production('statement', ['simpleExpression', 'statementEnd'])
+grammar.add_production('statementEnd', ['FIM'])
+grammar.add_production('statementEnd', ['CHAVES_DIREITA'])
 
 grammar.add_production('declaration', ['declaration_int'])
 grammar.add_production('declaration', ['declaration_float'])
