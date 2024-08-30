@@ -112,12 +112,14 @@ class Parser(Token):
         self.expression()
         self.match(TipoToken.PARENTESES_DIREITO)
         self.match(TipoToken.CHAVES_ESQUERDA)
-        self.statement()
+        self.statementList()  # Permite múltiplos statements dentro do 'if'
+        self.match(TipoToken.CHAVES_DIREITA)
         if self.tokenAtual.tipo == TipoToken.ELSE:
             self.consumir(TipoToken.ELSE)
             self.match(TipoToken.CHAVES_ESQUERDA)
-            self.statement()
-        self.match(TipoToken.ENDIF)
+            self.statementList()  # Permite múltiplos statements dentro do 'else'
+            self.match(TipoToken.CHAVES_DIREITA)
+        self.match(TipoToken.ENDIF)  # Adicionado 'endif'
 
  #x=1             x+1
     def statement(self):
@@ -148,9 +150,11 @@ class Parser(Token):
             self.match(TipoToken.FIM)
         elif self.tokenAtual.tipo == TipoToken.CHAVES_DIREITA:
             self.match(TipoToken.CHAVES_DIREITA)
+        elif self.tokenAtual.tipo == TipoToken.ENDIF:  # 'endif' adicionado
+            self.match(TipoToken.ENDIF)
         else:
             raise SyntaxError(
-                "Erro de sintaxe: Esperado FIM ou CHAVES_DIREITA, "
+                "Erro de sintaxe: Esperado FIM, CHAVES_DIREITA ou ENDIF, "
                 f"Encontrado: {nomesTokens[self.tokenAtual.tipo.value - 1]}"
             )
 
@@ -458,9 +462,11 @@ grammar.add_production('statement', ['declaration'])
 grammar.add_production('statement', ['ifStatement'])
 grammar.add_production('statement', ['whileStatement'])
 grammar.add_production('statement', ['assignment'])
-grammar.add_production('statement', ['simpleExpression', 'statementEnd'])
+grammar.add_production('statement', ['expression', 'statementEnd'])
 grammar.add_production('statementEnd', ['FIM'])
 grammar.add_production('statementEnd', ['CHAVES_DIREITA'])
+grammar.add_production('statementEnd', ['ENDIF']) 
+
 
 grammar.add_production('declaration', ['declaration_int'])
 grammar.add_production('declaration', ['declaration_float'])
@@ -472,8 +478,8 @@ grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'CHAVES_D
 grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression', 'FIM'])
 grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression', 'CHAVES_DIREITA'])
 
-grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'relationalExpression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statement', 'CHAVES_DIREITA'])
-grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'relationalExpression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statement', 'ELSE', 'CHAVES_ESQUERDA', 'statement', 'CHAVES_DIREITA', 'ENDIF'])
+grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'ENDIF'])
+grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'ELSE', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'ENDIF'])
 
 grammar.add_production('whileStatement', ['WHILE', 'PARENTESES_ESQUERDO', 'relationalExpression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statement', 'CHAVES_DIREITA'])
 
