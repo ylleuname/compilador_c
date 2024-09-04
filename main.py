@@ -1,3 +1,4 @@
+
 from enum import Enum
 from typing import Iterable, Dict, List, Tuple
 import ll1_check
@@ -111,17 +112,19 @@ class Parser(Token):
     def ifStatement(self):
         self.match(TipoToken.IF)
         self.match(TipoToken.PARENTESES_ESQUERDO)
-        self.expression()
+        #para consumir toda a expressão que estiver entre parenteses
+        while(self.tokenAtual.tipo != TipoToken.PARENTESES_DIREITO):
+            self.expression()
         self.match(TipoToken.PARENTESES_DIREITO)
         self.match(TipoToken.CHAVES_ESQUERDA)
         self.statementList()  # Permite múltiplos statements dentro do 'if'
-        self.match(TipoToken.CHAVES_DIREITA)
+        self.statementEnd()
         if self.tokenAtual.tipo == TipoToken.ELSE:
             self.consumir(TipoToken.ELSE)
             self.match(TipoToken.CHAVES_ESQUERDA)
             self.statementList()  # Permite múltiplos statements dentro do 'else'
-            self.match(TipoToken.CHAVES_DIREITA)
-        self.match(TipoToken.ENDIF)  # Adicionado 'endif'
+            self.statementEnd()
+        self.statementEnd()  # Adicionado 'endif'
 
 
     def statement(self):
@@ -163,6 +166,7 @@ class Parser(Token):
 
     # regra para aceitar declarações simples do tipo "int nome_variavel"
     def declaration_int(self):
+
         self.match(TipoToken.INT)
         self.match(TipoToken.IDENTIFICADOR)
         self.statementEnd()
@@ -193,19 +197,20 @@ class Parser(Token):
     def expressionLinha(self):
         if self.tokenAtual.tipo in (TipoToken.IGUAL, TipoToken.DIFERENTE,
                                     TipoToken.MENOR, TipoToken.MAIOR,
-                                    TipoToken.MENOR_IGUAL, TipoToken.MAIOR_IGUAL):
+                                    TipoToken.MENOR_IGUAL, TipoToken.MAIOR_IGUAL, TipoToken.ATRIBUICAO):
             self.consumir(self.tokenAtual.tipo)
             self.simpleExpression()
             self.expressionLinha()
+        else:
+            #verifica se a expressão se trata de uma expressão lógica
+            self.logicalExpressionLinha()
 
     def logicalExpression(self):
-        self.relationalExpression()
         self.logicalExpressionLinha()
 
     def logicalExpressionLinha(self):
         if self.tokenAtual.tipo in (TipoToken.SINAL_E, TipoToken.SINAL_OU):
             self.consumir(self.tokenAtual.tipo)
-            self.relationalExpression()
             self.logicalExpressionLinha()
 
     def simpleExpression(self):
@@ -450,23 +455,25 @@ def build_grammar():
   grammar.add_nonterminal('whileStatement')
   grammar.add_nonterminal('expression')
   #grammar.add_nonterminal('relationalExpression')
-  grammar.add_nonterminal('relationalOperator')
+  #grammar.add_nonterminal('relationalOperator')
   grammar.add_nonterminal('logicalExpression')
   grammar.add_nonterminal('logicalExpressionLinha')
   grammar.add_nonterminal('logicalOperator')
   grammar.add_nonterminal('simpleExpression')
-  grammar.add_nonterminal('additiveOperator')
+  #grammar.add_nonterminal('additiveOperator')
   grammar.add_nonterminal('term')
   grammar.add_nonterminal('termLinha')
   grammar.add_nonterminal('multiplicativeOperator')
   grammar.add_nonterminal('factor')
   grammar.add_nonterminal('simpleExpressionLinha')
+  grammar.add_nonterminal('statementEnd')
 
 
   grammar.add_production('program', ['declarationList','statementList'])
+
 # Declarações
-  grammar.add_production('declarationList', ['declaration', 'declarationList'])
-  grammar.add_production('declarationList', [])
+  #grammar.add_production('declarationList', ['declaration', 'declarationList'])
+  #grammar.add_production('declarationList', [])
   grammar.add_production('declaration', ['declaration_int'])
   grammar.add_production('declaration', ['declaration_float'])
   grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR'])
@@ -479,14 +486,20 @@ def build_grammar():
   grammar.add_production('statement', ['ifStatement'])
   grammar.add_production('statement', ['whileStatement'])
   grammar.add_production('statement', ['assignment'])
+  grammar.add_production('statement', ['declaration_int'])
+  grammar.add_production('statement', ['declaration_float'])
+  #Algum problema aqui que faz a regra não ser LL1
+  #grammar.add_production('statement', ['expression'])
+
   grammar.add_production('statementEnd', ['FIM'])
   grammar.add_production('statementEnd', ['CHAVES_DIREITA'])
   grammar.add_production('statementEnd', ['ENDIF']) 
 
-# Assignament
+# Assignment
   grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression'])
 # IF
-  grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'elseStatement','ENDIF'])
+  grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO',
+                                         'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'elseStatement','ENDIF'])
 # Else
   grammar.add_production('elseStatement', ['CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA'])
   grammar.add_production('elseStatement', [])
@@ -509,13 +522,12 @@ def build_grammar():
   grammar.add_production('logicalOperator', ['SINAL_E'])
   grammar.add_production('logicalOperator', ['SINAL_OU'])
 
+  #Expressão aritmética
   grammar.add_production('simpleExpression', ['term', 'simpleExpressionLinha'])
-  grammar.add_production('simpleExpressionLinha', ['additiveOperator', 'simpleExpression'])
+  grammar.add_production('simpleExpressionLinha', ['SOMA', 'SUBTRACAO'])
   grammar.add_production('simpleExpressionLinha', [])
 
-  grammar.add_production('additiveOperator', ['SOMA'])
-  grammar.add_production('additiveOperator', ['SUBTRACAO'])
-
+  #Term
   grammar.add_production('term', ['factor', 'multiplicativeOperator', 'term'])
   grammar.add_production('termLinha', ['multiplicativeOperator', 'term'])
   grammar.add_production('termLinha', [])
@@ -526,14 +538,16 @@ def build_grammar():
   grammar.add_production('factor', ['IDENTIFICADOR'])
   grammar.add_production('factor', ['INUM'])
   grammar.add_production('factor', ['FNUM'])
+  grammar.add_production('factor', ['PARENTESES_ESQUERDO'])
+  grammar.add_production('factor', ['PARENTESES_DIREITO'])
   #a linguagem não vai sustentar expressões lógicas com outra expressão lógica entre parênteses
   return grammar
 
 def main():
     g = build_grammar()
-    pred_alg = predict.predict_algorithm(g)
-    print(ll1_check.is_ll1(g,pred_alg))
-    entrada = "int x$"
+    #pred_alg = predict.predict_algorithm(g)
+    #print(ll1_check.is_ll1(g,pred_alg))
+    entrada = "if(x=1){x=1}endif"
     #entrada = 'a = 1'
     parser = Parser(entrada)
     try:
