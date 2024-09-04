@@ -6,7 +6,7 @@ import predict
 import grammar
 #criar endif para o fim do IF
 #
-class TipoToken(Enum):
+class tipo_token(Enum):
   INT = 1
   PRINTF = 2
   IDENTIFICADOR = 3
@@ -48,7 +48,7 @@ class Token:
   def __str__(self):
     return f"Token({self.tipo}, '{self.valor}')"
 
-nomesTokens = [
+nomes_token = [
     "DECLARACAO_INT", "IMPRIMIR", "IDENTIFICADOR", "ATRIBUICAO", "SOMA",
     "SUBTRACAO", "INUM", "FNUM", "ESPACO", "FIM", "NENHUM",
     "IF", "ELSE",
@@ -66,197 +66,200 @@ def criarToken(tipo, valor):
 class Parser(Token):
     def __init__(self, entrada):
         self.entrada = entrada
-        self.tokenAtual = Token(TipoToken.VAZIO, "")
+        self.token_atual = Token(tipo_token.VAZIO, "")
         self.avancar()
 
     def avancar(self):
-        self.tokenAtual, self.entrada = self.proximoToken(self.entrada)
+        self.token_atual, self.entrada = self.proximo_token(self.entrada)
 
-    def consumir(self, tipoEsperado):
-        if self.tokenAtual.tipo == tipoEsperado:
+    def consumir(self, tipo_esperado):
+        if self.token_atual.tipo == tipo_esperado:
             self.avancar()
         else:
             raise SyntaxError(
                 f"Erro de sintaxe: token inesperado. "
-                f"Esperado: {nomesTokens[tipoEsperado.value - 1]}, "
-                f"Encontrado: {nomesTokens[self.tokenAtual.tipo.value - 1]}"
+                f"Esperado: {nomes_token[tipo_esperado.value - 1]}, "
+                f"Encontrado: {nomes_token[self.token_atual.tipo.value - 1]}"
             )
 
-    def match(self, tipoEsperado):
-        if self.tokenAtual.tipo == tipoEsperado:
-            self.consumir(tipoEsperado)
+    def match(self, tipo_esperado):
+        if self.token_atual.tipo == tipo_esperado:
+            self.consumir(tipo_esperado)
         else:
             raise SyntaxError(
                 f"Erro de sintaxe: token esperado não encontrado. "
-                f"Esperado: {nomesTokens[tipoEsperado.value - 1]}, "
-                f"Encontrado: {nomesTokens[self.tokenAtual.tipo.value - 1]}"
+                f"Esperado: {nomes_token[tipo_esperado.value - 1]}, "
+                f"Encontrado: {nomes_token[self.token_atual.tipo.value - 1]}"
             )
 
     def program(self):
-        self.statementList()
+        self.lista_statement()
 
-    def statementList(self):
-        while (self.tokenAtual.tipo != TipoToken.FIM):
+    def lista_statement(self):
+        while (self.token_atual.tipo != tipo_token.FIM):
             self.statement()
-            if self.tokenAtual.tipo == TipoToken.FIM:
+            if self.token_atual.tipo == tipo_token.FIM:
                 break
 
-    def whileStatement(self):
-        self.match(TipoToken.WHILE)
-        self.match(TipoToken.PARENTESES_ESQUERDO)
-        self.expression()
-        self.match(TipoToken.PARENTESES_DIREITO)
-        self.match(TipoToken.CHAVES_ESQUERDA)
-        self.statement()
-
-    def ifStatement(self):
-        self.match(TipoToken.IF)
-        self.match(TipoToken.PARENTESES_ESQUERDO)
-        #para consumir toda a expressão que estiver entre parenteses
-        while(self.tokenAtual.tipo != TipoToken.PARENTESES_DIREITO):
+    def while_statement(self):
+        self.match(tipo_token.WHILE)
+        self.match(tipo_token.PARENTESES_ESQUERDO)
+        while (self.token_atual.tipo != tipo_token.PARENTESES_DIREITO):
             self.expression()
-        self.match(TipoToken.PARENTESES_DIREITO)
-        self.match(TipoToken.CHAVES_ESQUERDA)
-        self.statementList()  # Permite múltiplos statements dentro do 'if'
-        self.statementEnd()
-        if self.tokenAtual.tipo == TipoToken.ELSE:
-            self.consumir(TipoToken.ELSE)
-            self.match(TipoToken.CHAVES_ESQUERDA)
-            self.statementList()  # Permite múltiplos statements dentro do 'else'
-            self.statementEnd()
-        self.statementEnd()  # Adicionado 'endif'
+        self.match(tipo_token.PARENTESES_DIREITO)
+        self.match(tipo_token.CHAVES_ESQUERDA)
+        self.statement()
+        self.statements_finais()
+
+    def if_statement(self):
+        self.match(tipo_token.IF)
+        self.match(tipo_token.PARENTESES_ESQUERDO)
+        #para consumir toda a expressão que estiver entre parenteses
+        while(self.token_atual.tipo != tipo_token.PARENTESES_DIREITO):
+            self.expression()
+        self.match(tipo_token.PARENTESES_DIREITO)
+        self.match(tipo_token.CHAVES_ESQUERDA)
+        self.lista_statement()  # Permite múltiplos statements dentro do 'if'
+        self.statements_finais()
+        if self.token_atual.tipo == tipo_token.ELSE:
+            self.consumir(tipo_token.ELSE)
+            self.match(tipo_token.CHAVES_ESQUERDA)
+            self.lista_statement()  # Permite múltiplos statements dentro do 'else'
+            self.statements_finais()
+        self.statements_finais()  # Adicionado 'endif'
 
 
     def statement(self):
         #int x 
-        if self.tokenAtual.tipo == TipoToken.INT:
+        if self.token_atual.tipo == tipo_token.INT:
             self.declaration_int()
             print("declaracao int")
-        elif self.tokenAtual.tipo == TipoToken.FLOAT:
+        elif self.token_atual.tipo == tipo_token.FLOAT:
             self.declaration_float()
             print("declaracao float")
-        elif self.tokenAtual.tipo == TipoToken.IF:
-            self.ifStatement()
+        elif self.token_atual.tipo == tipo_token.IF:
+            self.if_statement()
             print("if statement")
-        elif self.tokenAtual.tipo == TipoToken.IDENTIFICADOR:
-            if self.proximoToken(self.entrada)[0].tipo == TipoToken.ATRIBUICAO:
+        elif self.token_atual.tipo == tipo_token.IDENTIFICADOR:
+            if self.proximo_token(self.entrada)[0].tipo == tipo_token.ATRIBUICAO:
                 self.assignment()
                 print("declaracao assignment")
             else:
                 self.expression()
-                self.match(TipoToken.FIM)
-        elif self.tokenAtual.tipo == TipoToken.WHILE:
-            self.whileStatement()
+                self.match(tipo_token.FIM)
+        elif self.token_atual.tipo == tipo_token.WHILE:
+            self.while_statement()
         else:
             self.expression()
-            self.statementEnd()
+            self.statements_finais()
 
-    def statementEnd(self):
-        if self.tokenAtual.tipo == TipoToken.FIM:
-            self.match(TipoToken.FIM)
-        elif self.tokenAtual.tipo == TipoToken.CHAVES_DIREITA:
-            self.match(TipoToken.CHAVES_DIREITA)
-        elif self.tokenAtual.tipo == TipoToken.ENDIF:  # 'endif' adicionado
-            self.match(TipoToken.ENDIF)
+    #um statement pode finalizar com $ (FIM), } (chaves direta) ou endif (endif para statements IF)
+    def statements_finais(self):
+        if self.token_atual.tipo == tipo_token.FIM:
+            self.match(tipo_token.FIM)
+        elif self.token_atual.tipo == tipo_token.CHAVES_DIREITA:
+            self.match(tipo_token.CHAVES_DIREITA)
+        elif self.token_atual.tipo == tipo_token.ENDIF:  # 'endif' adicionado
+            self.match(tipo_token.ENDIF)
         else:
             raise SyntaxError(
                 "Erro de sintaxe: Esperado FIM, CHAVES_DIREITA ou ENDIF, "
-                f"Encontrado: {nomesTokens[self.tokenAtual.tipo.value - 1]}"
+                f"Encontrado: {nomes_token[self.token_atual.tipo.value - 1]}"
             )
 
     # regra para aceitar declarações simples do tipo "int nome_variavel"
     def declaration_int(self):
 
-        self.match(TipoToken.INT)
-        self.match(TipoToken.IDENTIFICADOR)
-        self.statementEnd()
+        self.match(tipo_token.INT)
+        self.match(tipo_token.IDENTIFICADOR)
+        self.statements_finais()
 
     def declaration_float(self):
-        self.match(TipoToken.FLOAT)
-        self.match(TipoToken.IDENTIFICADOR)
-        if self.tokenAtual.tipo == TipoToken.FIM:
-            self.match(TipoToken.FIM)
-        elif self.tokenAtual.tipo == TipoToken.CHAVES_DIREITA:
-            self.match(TipoToken.CHAVES_DIREITA)
+        self.match(tipo_token.FLOAT)
+        self.match(tipo_token.IDENTIFICADOR)
+        if self.token_atual.tipo == tipo_token.FIM:
+            self.match(tipo_token.FIM)
+        elif self.token_atual.tipo == tipo_token.CHAVES_DIREITA:
+            self.match(tipo_token.CHAVES_DIREITA)
 
     #x = 1
     def assignment(self):
-        self.match(TipoToken.IDENTIFICADOR)
-        self.match(TipoToken.ATRIBUICAO)
+        self.match(tipo_token.IDENTIFICADOR)
+        self.match(tipo_token.ATRIBUICAO)
         self.expression()
-        if self.tokenAtual.tipo == TipoToken.FIM:
-            self.match(TipoToken.FIM)
-        elif self.tokenAtual.tipo == TipoToken.CHAVES_DIREITA:
-            self.match(TipoToken.CHAVES_DIREITA)
+        if self.token_atual.tipo == tipo_token.FIM:
+            self.match(tipo_token.FIM)
+        elif self.token_atual.tipo == tipo_token.CHAVES_DIREITA:
+            self.match(tipo_token.CHAVES_DIREITA)
 
     # expressões lógicas agora têm prioridade menor que aritméticas
     def expression(self):
-        self.simpleExpression()
-        self.expressionLinha()
+        self.simple_expression()
+        self.expression_linha()
 
-    def expressionLinha(self):
-        if self.tokenAtual.tipo in (TipoToken.IGUAL, TipoToken.DIFERENTE,
-                                    TipoToken.MENOR, TipoToken.MAIOR,
-                                    TipoToken.MENOR_IGUAL, TipoToken.MAIOR_IGUAL, TipoToken.ATRIBUICAO):
-            self.consumir(self.tokenAtual.tipo)
-            self.simpleExpression()
-            self.expressionLinha()
+    def expression_linha(self):
+        if self.token_atual.tipo in (tipo_token.IGUAL, tipo_token.DIFERENTE,
+                                    tipo_token.MENOR, tipo_token.MAIOR,
+                                    tipo_token.MENOR_IGUAL, tipo_token.MAIOR_IGUAL, tipo_token.ATRIBUICAO):
+            self.consumir(self.token_atual.tipo)
+            self.simple_expression()
+            self.expression_linha()
         else:
             #verifica se a expressão se trata de uma expressão lógica
-            self.logicalExpressionLinha()
+            self.logical_expression_linha()
 
-    def logicalExpression(self):
-        self.logicalExpressionLinha()
+    def logical_expression(self):
+        self.logical_expression_linha()
 
-    def logicalExpressionLinha(self):
-        if self.tokenAtual.tipo in (TipoToken.SINAL_E, TipoToken.SINAL_OU):
-            self.consumir(self.tokenAtual.tipo)
-            self.logicalExpressionLinha()
+    def logical_expression_linha(self):
+        if self.token_atual.tipo in (tipo_token.SINAL_E, tipo_token.SINAL_OU):
+            self.consumir(self.token_atual.tipo)
+            self.logical_expression_linha()
 
-    def simpleExpression(self):
+    def simple_expression(self):
         self.term()
-        self.simpleExpressionLinha()
+        self.simple_expression_linha()
 
-    def simpleExpressionLinha(self):
-        if self.tokenAtual.tipo in (TipoToken.SOMA, TipoToken.SUBTRACAO):
-            self.consumir(self.tokenAtual.tipo)
+    def simple_expression_linha(self):
+        if self.token_atual.tipo in (tipo_token.SOMA, tipo_token.SUBTRACAO):
+            self.consumir(self.token_atual.tipo)
             self.term()
-            self.simpleExpressionLinha()
+            self.simple_expression_linha()
         else:
             return
 
     def term(self):
         self.factor()
-        self.termLinha()
+        self.term_linha()
 
-    def termLinha(self):
-        if self.tokenAtual.tipo in (TipoToken.MULTIPLICACAO, TipoToken.DIVISAO):
-            self.consumir(self.tokenAtual.tipo)
+    def term_linha(self):
+        if self.token_atual.tipo in (tipo_token.MULTIPLICACAO, tipo_token.DIVISAO):
+            self.consumir(self.token_atual.tipo)
             self.factor()
-            self.termLinha()  # Recursão à direita
+            self.term_linha()  # Recursão à direita
         else:
             return
 
     def factor(self):
-        if self.tokenAtual.tipo in (
-                TipoToken.IDENTIFICADOR,
-                TipoToken.INUM,
-                TipoToken.FNUM,
-                TipoToken.IF
+        if self.token_atual.tipo in (
+                tipo_token.IDENTIFICADOR,
+                tipo_token.INUM,
+                tipo_token.FNUM,
+                tipo_token.IF
         ):
-            self.consumir(self.tokenAtual.tipo)
-        elif self.tokenAtual.tipo == TipoToken.PARENTESES_ESQUERDO:
-            self.consumir(TipoToken.PARENTESES_ESQUERDO)
+            self.consumir(self.token_atual.tipo)
+        elif self.token_atual.tipo == tipo_token.PARENTESES_ESQUERDO:
+            self.consumir(tipo_token.PARENTESES_ESQUERDO)
             self.expression()
-            self.consumir(TipoToken.PARENTESES_DIREITO)
+            self.consumir(tipo_token.PARENTESES_DIREITO)
         else:
             raise SyntaxError(
                 "Erro de sintaxe: fator inválido. "
-                f"Encontrado: {nomesTokens[self.tokenAtual.tipo.value - 1]}"
+                f"Encontrado: {nomes_token[self.token_atual.tipo.value - 1]}"
             )
 
     #vai "pulando" os espaços em branco para poder ir para o próximo token
-    def proximoToken(self, entrada):
+    def proximo_token(self, entrada):
       while entrada:
         if entrada[0].isspace():
             entrada = entrada[1:]
@@ -264,59 +267,59 @@ class Parser(Token):
         else:
             break
       if not entrada:
-        return criarToken(TipoToken.FIM, ""), ""
+        return criarToken(tipo_token.FIM, ""), ""
 
       # Verifica cada tipo de token
       if entrada.startswith("int"):
-        return criarToken(TipoToken.INT, 'int'), entrada[3:]
+        return criarToken(tipo_token.INT, 'int'), entrada[3:]
       if entrada.startswith("float"):
-        return criarToken(TipoToken.FLOAT, 'float'), entrada[5:]
+        return criarToken(tipo_token.FLOAT, 'float'), entrada[5:]
       elif entrada.startswith("printf"):
-        return criarToken(TipoToken.PRINTF, 'printf'), entrada[6:]
+        return criarToken(tipo_token.PRINTF, 'printf'), entrada[6:]
       elif entrada.startswith("=="):
-        return criarToken(TipoToken.IGUAL, '=='), entrada[2:]
+        return criarToken(tipo_token.IGUAL, '=='), entrada[2:]
       elif entrada[0] == '=':
-        return criarToken(TipoToken.ATRIBUICAO, '='), entrada[1:]
+        return criarToken(tipo_token.ATRIBUICAO, '='), entrada[1:]
       elif entrada[0] == '+':
-        return criarToken(TipoToken.SOMA, '+'), entrada[1:]
+        return criarToken(tipo_token.SOMA, '+'), entrada[1:]
       elif entrada[0] == '-':
-        return criarToken(TipoToken.SUBTRACAO, '-'), entrada[1:]
+        return criarToken(tipo_token.SUBTRACAO, '-'), entrada[1:]
       elif entrada[0] == '/':
-        return criarToken(TipoToken.DIVISAO, '/'), entrada[1:]
+        return criarToken(tipo_token.DIVISAO, '/'), entrada[1:]
       elif entrada[0] == '*':
-        return criarToken(TipoToken.MULTIPLICACAO, '*'), entrada[1:]
+        return criarToken(tipo_token.MULTIPLICACAO, '*'), entrada[1:]
       elif entrada[0] == '(':
-        return criarToken(TipoToken.PARENTESES_ESQUERDO, '('), entrada[1:]
+        return criarToken(tipo_token.PARENTESES_ESQUERDO, '('), entrada[1:]
       elif entrada[0] == ')':
-        return criarToken(TipoToken.PARENTESES_DIREITO, ')'), entrada[1:]
+        return criarToken(tipo_token.PARENTESES_DIREITO, ')'), entrada[1:]
       elif entrada[0] == '{':
-        return criarToken(TipoToken.CHAVES_ESQUERDA, '{'), entrada[1:]
+        return criarToken(tipo_token.CHAVES_ESQUERDA, '{'), entrada[1:]
       elif entrada[0] == '}':
-        return criarToken(TipoToken.CHAVES_DIREITA, '}'), entrada[1:]
+        return criarToken(tipo_token.CHAVES_DIREITA, '}'), entrada[1:]
       elif entrada[0] == '<':
-        return criarToken(TipoToken.MENOR, '<'), entrada[1:]
+        return criarToken(tipo_token.MENOR, '<'), entrada[1:]
       elif entrada[0] == '>':
-        return criarToken(TipoToken.MAIOR, '>'), entrada[1:]
+        return criarToken(tipo_token.MAIOR, '>'), entrada[1:]
       elif entrada[0] == 'endif':
-        return criarToken(TipoToken.ENDIF, 'endif'), entrada[5:]
+        return criarToken(tipo_token.ENDIF, 'endif'), entrada[5:]
       elif entrada[0] == '$':
-        return criarToken(TipoToken.FIM, '$'), entrada[1:]
+        return criarToken(tipo_token.FIM, '$'), entrada[1:]
       elif entrada.startswith("if"):
-        return criarToken(TipoToken.IF, "if"), entrada[2:]
+        return criarToken(tipo_token.IF, "if"), entrada[2:]
       elif entrada.startswith("else"):
-        return criarToken(TipoToken.ELSE, "else"), entrada[4:]
+        return criarToken(tipo_token.ELSE, "else"), entrada[4:]
       elif entrada.startswith("while"):
-        return criarToken(TipoToken.WHILE, "while"), entrada[5:]
+        return criarToken(tipo_token.WHILE, "while"), entrada[5:]
       if entrada.startswith("&&"):
-        return criarToken(TipoToken.SINAL_E, '&&'), entrada[2:]
+        return criarToken(tipo_token.SINAL_E, '&&'), entrada[2:]
       if entrada.startswith("||"):
-        return criarToken(TipoToken.SINAL_OU, '||'), entrada[2:]
+        return criarToken(tipo_token.SINAL_OU, '||'), entrada[2:]
       if entrada.startswith("!="):
-        return criarToken(TipoToken.DIFERENTE, '!='), entrada[2:]
+        return criarToken(tipo_token.DIFERENTE, '!='), entrada[2:]
       if entrada.startswith("<="):
-        return criarToken(TipoToken.MENOR_IGUAL, '<='), entrada[2:]
+        return criarToken(tipo_token.MENOR_IGUAL, '<='), entrada[2:]
       if entrada.startswith(">="):
-        return criarToken(TipoToken.MAIOR_IGUAL, '>='), entrada[2:]
+        return criarToken(tipo_token.MAIOR_IGUAL, '>='), entrada[2:]
       #Caso onde a entrada é um dígito
       elif entrada[0].isdigit():
         inicio = 0
@@ -326,16 +329,16 @@ class Parser(Token):
           inicio += 1
           while inicio < len(entrada) and entrada[inicio].isdigit():
             inicio += 1
-          return criarToken(TipoToken.FNUM, entrada[:inicio]), entrada[inicio:]
-        return criarToken(TipoToken.INUM, entrada[:inicio]), entrada[inicio:]
+          return criarToken(tipo_token.FNUM, entrada[:inicio]), entrada[inicio:]
+        return criarToken(tipo_token.INUM, entrada[:inicio]), entrada[inicio:]
       #Caso onde a entrada é uma palavra (Identificador)
       elif entrada[0].isalpha():
         inicio = 0
         while inicio < len(entrada) and entrada[inicio].isalpha():
           inicio += 1
-        return criarToken(TipoToken.IDENTIFICADOR, entrada[:inicio]), entrada[inicio:]
+        return criarToken(tipo_token.IDENTIFICADOR, entrada[:inicio]), entrada[inicio:]
       else:
-        return criarToken(TipoToken.VAZIO, ""), entrada[1:]
+        return criarToken(tipo_token.VAZIO, ""), entrada[1:]
 
 class Grammar:
 
@@ -443,33 +446,33 @@ def build_grammar():
 
   # Definir os não-terminais
   grammar.grammar('program')
-  grammar.add_nonterminal('statementList')
+  grammar.add_nonterminal('lista_statement')
   grammar.add_nonterminal('statement')
   grammar.add_nonterminal('declaration')
   grammar.add_nonterminal('declarationList')
   grammar.add_nonterminal('declaration_int')
   grammar.add_nonterminal('declaration_float')
   grammar.add_nonterminal('assignment')
-  grammar.add_nonterminal('ifStatement')
+  grammar.add_nonterminal('if_statement')
   grammar.add_nonterminal('elseStatement')
-  grammar.add_nonterminal('whileStatement')
+  grammar.add_nonterminal('while_statement')
   grammar.add_nonterminal('expression')
   #grammar.add_nonterminal('relationalExpression')
   #grammar.add_nonterminal('relationalOperator')
-  grammar.add_nonterminal('logicalExpression')
-  grammar.add_nonterminal('logicalExpressionLinha')
+  grammar.add_nonterminal('logical_expression')
+  grammar.add_nonterminal('logical_expression_linha')
   grammar.add_nonterminal('logicalOperator')
-  grammar.add_nonterminal('simpleExpression')
+  grammar.add_nonterminal('simple_expression')
   #grammar.add_nonterminal('additiveOperator')
   grammar.add_nonterminal('term')
-  grammar.add_nonterminal('termLinha')
+  grammar.add_nonterminal('term_linha')
   grammar.add_nonterminal('multiplicativeOperator')
   grammar.add_nonterminal('factor')
-  grammar.add_nonterminal('simpleExpressionLinha')
-  grammar.add_nonterminal('statementEnd')
+  grammar.add_nonterminal('simple_expression_linha')
+  grammar.add_nonterminal('statements_finais')
 
 
-  grammar.add_production('program', ['declarationList','statementList'])
+  grammar.add_production('program', ['declarationList','lista_statement'])
 
 # Declarações
   #grammar.add_production('declarationList', ['declaration', 'declarationList'])
@@ -480,35 +483,35 @@ def build_grammar():
   grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR'])
 
 # Statements
-  grammar.add_production('statementList', ['statement', 'statementList'])
-  grammar.add_production('statementList', [])
+  grammar.add_production('lista_statement', ['statement', 'lista_statement'])
+  grammar.add_production('lista_statement', [])
 
-  grammar.add_production('statement', ['ifStatement'])
-  grammar.add_production('statement', ['whileStatement'])
+  grammar.add_production('statement', ['if_statement'])
+  grammar.add_production('statement', ['while_statement'])
   grammar.add_production('statement', ['assignment'])
   grammar.add_production('statement', ['declaration_int'])
   grammar.add_production('statement', ['declaration_float'])
   #Algum problema aqui que faz a regra não ser LL1
   #grammar.add_production('statement', ['expression'])
 
-  grammar.add_production('statementEnd', ['FIM'])
-  grammar.add_production('statementEnd', ['CHAVES_DIREITA'])
-  grammar.add_production('statementEnd', ['ENDIF']) 
+  grammar.add_production('statements_finais', ['FIM'])
+  grammar.add_production('statements_finais', ['CHAVES_DIREITA'])
+  grammar.add_production('statements_finais', ['ENDIF']) 
 
 # Assignment
   grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression'])
 # IF
-  grammar.add_production('ifStatement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO',
-                                         'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA', 'elseStatement','ENDIF'])
+  grammar.add_production('if_statement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO',
+                                         'CHAVES_ESQUERDA', 'lista_statement', 'CHAVES_DIREITA', 'elseStatement','ENDIF'])
 # Else
-  grammar.add_production('elseStatement', ['CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA'])
+  grammar.add_production('elseStatement', ['CHAVES_ESQUERDA', 'lista_statement', 'CHAVES_DIREITA'])
   grammar.add_production('elseStatement', [])
 
-  grammar.add_production('whileStatement', ['WHILE', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'statementList', 'CHAVES_DIREITA'])
+  grammar.add_production('while_statement', ['WHILE', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'lista_statement', 'CHAVES_DIREITA'])
 
-  grammar.add_production('expression', ['logicalExpression'])
+  grammar.add_production('expression', ['logical_expression'])
 
-  """grammar.add_production('relationalExpression', ['simpleExpression', 'relationalOperator', 'simpleExpression'])
+  """grammar.add_production('relationalExpression', ['simple_expression', 'relationalOperator', 'simple_expression'])
   grammar.add_production('relationalOperator', ['IGUAL'])
   grammar.add_production('relationalOperator', ['DIFERENTE'])
   grammar.add_production('relationalOperator', ['MENOR'])
@@ -516,21 +519,21 @@ def build_grammar():
   grammar.add_production('relationalOperator', ['MENOR_IGUAL'])
   grammar.add_production('relationalOperator', ['MAIOR_IGUAL'])"""
 
-  grammar.add_production('logicalExpression', ['simpleExpression', 'logicalExpressionLinha'])
-  grammar.add_production('logicalExpressionLinha', ['logicalOperator', 'simpleExpression'])
-  grammar.add_production('logicalExpressionLinha', [])
+  grammar.add_production('logical_expression', ['simple_expression', 'logical_expression_linha'])
+  grammar.add_production('logical_expression_linha', ['logicalOperator', 'simple_expression'])
+  grammar.add_production('logical_expression_linha', [])
   grammar.add_production('logicalOperator', ['SINAL_E'])
   grammar.add_production('logicalOperator', ['SINAL_OU'])
 
   #Expressão aritmética
-  grammar.add_production('simpleExpression', ['term', 'simpleExpressionLinha'])
-  grammar.add_production('simpleExpressionLinha', ['SOMA', 'SUBTRACAO'])
-  grammar.add_production('simpleExpressionLinha', [])
+  grammar.add_production('simple_expression', ['term', 'simple_expression_linha'])
+  grammar.add_production('simple_expression_linha', ['SOMA', 'SUBTRACAO'])
+  grammar.add_production('simple_expression_linha', [])
 
   #Term
   grammar.add_production('term', ['factor', 'multiplicativeOperator', 'term'])
-  grammar.add_production('termLinha', ['multiplicativeOperator', 'term'])
-  grammar.add_production('termLinha', [])
+  grammar.add_production('term_linha', ['multiplicativeOperator', 'term'])
+  grammar.add_production('term_linha', [])
 
   grammar.add_production('multiplicativeOperator', ['MULTIPLICACAO'])
   grammar.add_production('multiplicativeOperator', ['DIVISAO'])
@@ -545,14 +548,14 @@ def build_grammar():
 
 def main():
     g = build_grammar()
-    #pred_alg = predict.predict_algorithm(g)
+    pred_alg = predict.predict_algorithm(g)
     #print(ll1_check.is_ll1(g,pred_alg))
-    entrada = "if(x=1){x=1}endif"
+    entrada = "while(x||x){x=x+1}"
     #entrada = 'a = 1'
     parser = Parser(entrada)
     try:
         parser.program()
-        if parser.tokenAtual.tipo == TipoToken.FIM:
+        if parser.token_atual.tipo == tipo_token.FIM:
             print("Análise sintática concluída com sucesso!")
         else:
             print("Erro na análise sintática")
