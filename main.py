@@ -151,7 +151,6 @@ class Parser(Token):
             self.while_statement()
         else:
             self.expression()
-            self.statements_finais()
 
     #um statement pode finalizar com $ (FIM), } (chaves direta) ou endif (endif para statements IF)
     def statements_finais(self):
@@ -177,20 +176,14 @@ class Parser(Token):
     def declaration_float(self):
         self.match(tipo_token.FLOAT)
         self.match(tipo_token.IDENTIFICADOR)
-        if self.token_atual.tipo == tipo_token.FIM:
-            self.match(tipo_token.FIM)
-        elif self.token_atual.tipo == tipo_token.CHAVES_DIREITA:
-            self.match(tipo_token.CHAVES_DIREITA)
+        self.statements_finais()
 
     #x = 1
     def assignment(self):
         self.match(tipo_token.IDENTIFICADOR)
         self.match(tipo_token.ATRIBUICAO)
         self.expression()
-        if self.token_atual.tipo == tipo_token.FIM:
-            self.match(tipo_token.FIM)
-        elif self.token_atual.tipo == tipo_token.CHAVES_DIREITA:
-            self.match(tipo_token.CHAVES_DIREITA)
+        self.statements_finais()
 
     # expressões lógicas agora têm prioridade menor que aritméticas
     def expression(self):
@@ -454,7 +447,7 @@ def build_grammar():
   grammar.add_nonterminal('declaration_float')
   grammar.add_nonterminal('assignment')
   grammar.add_nonterminal('if_statement')
-  grammar.add_nonterminal('elseStatement')
+  grammar.add_nonterminal('else_statement')
   grammar.add_nonterminal('while_statement')
   grammar.add_nonterminal('expression')
   #grammar.add_nonterminal('relationalExpression')
@@ -470,18 +463,10 @@ def build_grammar():
   grammar.add_nonterminal('factor')
   grammar.add_nonterminal('simple_expression_linha')
   grammar.add_nonterminal('statements_finais')
+  grammar.add_nonterminal('atribuicao_ou_expressao')
 
 
-  grammar.add_production('program', ['declarationList','lista_statement'])
-
-# Declarações
-  #grammar.add_production('declarationList', ['declaration', 'declarationList'])
-  #grammar.add_production('declarationList', [])
-  grammar.add_production('declaration', ['declaration_int'])
-  grammar.add_production('declaration', ['declaration_float'])
-  grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR'])
-  grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR'])
-
+  grammar.add_production('program', ['lista_statement'])
 # Statements
   grammar.add_production('lista_statement', ['statement', 'lista_statement'])
   grammar.add_production('lista_statement', [])
@@ -491,25 +476,36 @@ def build_grammar():
   grammar.add_production('statement', ['assignment'])
   grammar.add_production('statement', ['declaration_int'])
   grammar.add_production('statement', ['declaration_float'])
-  #Algum problema aqui que faz a regra não ser LL1
-  #grammar.add_production('statement', ['expression'])
+  grammar.add_production('statement', ['expression'])
+
+# Declarações
+  #grammar.add_production('declarationList', ['declaration', 'declarationList'])
+  #grammar.add_production('declarationList', [])
+  #grammar.add_production('declaration', ['declaration_int'])
+  #grammar.add_production('declaration', ['declaration_float'])
+  grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR', 'statements_finais'])
+  grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'statements_finais'])
+
+  #grammar.add_production('statement', ['atribuicao_ou_expressao'])
+  #grammar.add_production('atribuicao_ou_expressao', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression'])
+  #grammar.add_production('atribuicao_ou_expressao', ['logical_expression'])
 
   grammar.add_production('statements_finais', ['FIM'])
   grammar.add_production('statements_finais', ['CHAVES_DIREITA'])
   grammar.add_production('statements_finais', ['ENDIF']) 
 
 # Assignment
-  grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression'])
+  grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression', 'statements_finais'])
 # IF
   grammar.add_production('if_statement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO',
-                                         'CHAVES_ESQUERDA', 'lista_statement', 'CHAVES_DIREITA', 'elseStatement','ENDIF'])
+                                         'CHAVES_ESQUERDA', 'lista_statement', 'else_statement','statements_finais'])
 # Else
-  grammar.add_production('elseStatement', ['CHAVES_ESQUERDA', 'lista_statement', 'CHAVES_DIREITA'])
-  grammar.add_production('elseStatement', [])
+  grammar.add_production('else_statement', ['CHAVES_ESQUERDA', 'lista_statement', 'statements_finais'])
+  grammar.add_production('else_statement', [])
 
-  grammar.add_production('while_statement', ['WHILE', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'lista_statement', 'CHAVES_DIREITA'])
+  grammar.add_production('while_statement', ['WHILE', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO', 'CHAVES_ESQUERDA', 'lista_statement', 'statements_finais'])
 
-  grammar.add_production('expression', ['logical_expression'])
+  grammar.add_production('expression', ['logical_expression', 'assignment'])
 
   """grammar.add_production('relationalExpression', ['simple_expression', 'relationalOperator', 'simple_expression'])
   grammar.add_production('relationalOperator', ['IGUAL'])
@@ -532,25 +528,26 @@ def build_grammar():
 
   #Term
   grammar.add_production('term', ['factor', 'multiplicativeOperator', 'term'])
-  grammar.add_production('term_linha', ['multiplicativeOperator', 'term'])
-  grammar.add_production('term_linha', [])
+  #grammar.add_production('term_linha', ['multiplicativeOperator', 'term'])
+  #grammar.add_production('term_linha', [])
 
   grammar.add_production('multiplicativeOperator', ['MULTIPLICACAO'])
   grammar.add_production('multiplicativeOperator', ['DIVISAO'])
 
-  grammar.add_production('factor', ['IDENTIFICADOR'])
+  #grammar.add_production('factor', ['IDENTIFICADOR'])
   grammar.add_production('factor', ['INUM'])
   grammar.add_production('factor', ['FNUM'])
   grammar.add_production('factor', ['PARENTESES_ESQUERDO'])
   grammar.add_production('factor', ['PARENTESES_DIREITO'])
+
   #a linguagem não vai sustentar expressões lógicas com outra expressão lógica entre parênteses
   return grammar
 
 def main():
     g = build_grammar()
     pred_alg = predict.predict_algorithm(g)
-    #print(ll1_check.is_ll1(g,pred_alg))
-    entrada = "while(x||x){x=x+1}"
+    print(ll1_check.is_ll1(g,pred_alg))
+    entrada = "if(x||x){x=x+1}endif"
     #entrada = 'a = 1'
     parser = Parser(entrada)
     try:
