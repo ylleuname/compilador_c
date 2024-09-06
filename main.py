@@ -39,7 +39,7 @@ class tipo_token(Enum):
   MENOR_IGUAL = 29
   MAIOR_IGUAL = 30
   ENDIF = 31
-
+#começar: tabelas de signos q vai ter o nome de cada variavel com um endereço único
 class Token:
   def __init__(self, tipo, valor):
     self.tipo = tipo
@@ -442,7 +442,7 @@ def build_grammar():
   grammar.add_nonterminal('lista_statement')
   grammar.add_nonterminal('statement')
   grammar.add_nonterminal('declaration')
-  grammar.add_nonterminal('declarationList')
+  grammar.add_nonterminal('lista_declaration')
   grammar.add_nonterminal('declaration_int')
   grammar.add_nonterminal('declaration_float')
   grammar.add_nonterminal('assignment')
@@ -466,7 +466,12 @@ def build_grammar():
   grammar.add_nonterminal('atribuicao_ou_expressao')
 
 
-  grammar.add_production('program', ['lista_statement'])
+  #o programa chama program e a lista de declarações
+  grammar.add_production('program', ['lista_declaration','lista_statement'])
+  grammar.add_production('lista_declaration', ['declaration_int', 'declaration_float'])
+  grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR', 'statements_finais'])
+  grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'statements_finais'])
+
 # Statements
   grammar.add_production('lista_statement', ['statement', 'lista_statement'])
   grammar.add_production('lista_statement', [])
@@ -474,17 +479,16 @@ def build_grammar():
   grammar.add_production('statement', ['if_statement'])
   grammar.add_production('statement', ['while_statement'])
   grammar.add_production('statement', ['assignment'])
-  grammar.add_production('statement', ['declaration_int'])
-  grammar.add_production('statement', ['declaration_float'])
+  #grammar.add_production('statement', ['declaration_int'])
+  #grammar.add_production('statement', ['declaration_float'])
   grammar.add_production('statement', ['expression'])
 
 # Declarações
-  #grammar.add_production('declarationList', ['declaration', 'declarationList'])
-  #grammar.add_production('declarationList', [])
+  #grammar.add_production('lista_declaration', ['declaration', 'lista_declaration'])
+  #grammar.add_production('lista_declaration', [])
   #grammar.add_production('declaration', ['declaration_int'])
   #grammar.add_production('declaration', ['declaration_float'])
-  grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR', 'statements_finais'])
-  grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'statements_finais'])
+
 
   #grammar.add_production('statement', ['atribuicao_ou_expressao'])
   #grammar.add_production('atribuicao_ou_expressao', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression'])

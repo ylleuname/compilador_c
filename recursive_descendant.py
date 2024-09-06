@@ -7,8 +7,27 @@ def print_grammar(G: Grammar) -> None:
     print('Não-terminais:', ' '.join([X for X in G.nonterminals()]))
     # print(G.productions())
     print('Produções:', ' '.join(
-        ['id: ' + str(p) + ' ' + str(G.lhs(p)) + '->' + str(G.rhs(p)) for p in G.productions()]))
+        ['id: ' + str(p) + ' ' + str(G.lhs(p)) + '->' + str(G.rhs(p)) + '\n'for p in G.productions()]))
 
+def print_rec_desc(G: Grammar) -> None:
+    for X in G.nonterminals():
+        prod_list = G.productions_for(X)
+        print(f'def {X}(ts,p):')
+        first = 1
+        for p in prod_list:
+            if first == 1:
+                print(f'\tif ts.peek() in p.predict({p}):')
+                rhs = G.rhs(p)
+                for x in rhs:
+                    if G.is_terminal(x):
+                        print(f'\t\tts.match({x})')
+                    else:
+                        print(f'\t\t{x}(ts,p)')
+                first = 0
+                # insert code for production
+            else:
+                print(f'\telif ts.peek() in p.predict({p}):')
+                # insert code production
 
 def create_example_grammar()->Grammar:
     G = Grammar()
@@ -73,6 +92,9 @@ def S(ts:token_sequence,p:predict_algorithm)->None:
 if __name__ == '__main__':
     G = create_example_grammar()
     print_grammar(G)
-    predict_alg = predict_algorithm(G) 
+
+    predict_alg = predict_algorithm(G)
+    print_rec_desc(G)
     ts = token_sequence(['a','b','b','b','b','b','c','d','c','c','$'])
     S(ts,predict_alg)
+
