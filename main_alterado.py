@@ -5,6 +5,9 @@ import ll1_check
 import grammar
 from predict import predict_algorithm
 from token_sequence import token_sequence
+from guided_ll1 import guided_ll1_parser
+import re
+
 
 class tipo_token(Enum):
   INT = 1
@@ -265,11 +268,12 @@ def program(ts: token_sequence, p: predict_algorithm):
     if ts.peek() in p.predict(50):
         lista_declaration(ts, p)
         lista_statement(ts, p)
+        ts.match('$')
     elif ts.peek() in p.predict(50):
         return
 
 
-class Parser(Token):
+"""class Parser(Token):
     def __init__(self, entrada):
         self.entrada = entrada
         self.token_atual = Token(tipo_token.VAZIO, "")
@@ -382,10 +386,10 @@ class Parser(Token):
           inicio += 1
         return criarToken(tipo_token.IDENTIFICADOR, entrada[:inicio]), entrada[inicio:]
       else:
-        return criarToken(tipo_token.VAZIO, ""), entrada[1:]
+        return criarToken(tipo_token.VAZIO, ""), entrada[1:]"""
+
 
 class Grammar:
-
     def __init__(self) -> None:
         self.__terminals = {}
         self.__nonterminals = {}
@@ -501,26 +505,24 @@ def build_grammar():
   grammar.add_nonterminal('else_statement')
   grammar.add_nonterminal('while_statement')
   grammar.add_nonterminal('expression')
-  #grammar.add_nonterminal('relationalExpression')
-  #grammar.add_nonterminal('relationalOperator')
   grammar.add_nonterminal('logical_expression')
   grammar.add_nonterminal('logical_expression_linha')
-  grammar.add_nonterminal('logicalOperator')
+  grammar.add_nonterminal('logical_operator')
   grammar.add_nonterminal('simple_expression')
-  #grammar.add_nonterminal('additiveOperator')
   grammar.add_nonterminal('term')
   grammar.add_nonterminal('term_linha')
   grammar.add_nonterminal('multiplicativeOperator')
   grammar.add_nonterminal('factor')
   grammar.add_nonterminal('simple_expression_linha')
   grammar.add_nonterminal('statements_finais')
-  grammar.add_nonterminal('atribuicao_ou_expressao')
+  #grammar.add_nonterminal('atribuicao_ou_expressao')
 
   # Início do compilador: Program chama program e a lista de declarações
-  grammar.add_production('program', ['lista_declaration', 'lista_statement'])  # 50
+  grammar.add_production('program', ['lista_declaration', 'lista_statement', '$'])  # 50
   grammar.add_production('lista_declaration', ['declaration_int', 'declaration_float'])  # 51
   grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR', 'statements_finais'])  # 52
   grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'statements_finais'])  # 53
+
 
   # Lista de statements e Statements
   grammar.add_production('lista_statement', ['statement', 'lista_statement'])  # 54
@@ -583,14 +585,79 @@ def build_grammar():
   grammar.add_production('factor', ['PARENTESES_ESQUERDO'])  # 88
   grammar.add_production('factor', ['PARENTESES_DIREITO'])  # 89
 
+  grammar.add_terminal('$') #90
+  grammar.add_production('lista_declaration', []) #91
+
+
   #a linguagem não vai sustentar expressões lógicas com outra expressão lógica entre parênteses
   return grammar
 
+
+
+regex_table = {
+    r'^int$': tipo_token.INT.name,
+    r'^float$': tipo_token.FLOAT.name,
+    r'^printf$': tipo_token.PRINTF.name,
+    r'^if$': tipo_token.IF.name,
+    r'^else$': tipo_token.ELSE.name,
+    r'^endif$': tipo_token.ENDIF.name,
+    r'^while$': tipo_token.WHILE.name,
+    r'^==$': tipo_token.IGUAL.name,
+    r'^=$': tipo_token.ATRIBUICAO.name,
+    r'^\+$': tipo_token.SOMA.name,
+    r'^\-$': tipo_token.SUBTRACAO.name,
+    r'^\/$': tipo_token.DIVISAO.name,
+    r'^\*$': tipo_token.MULTIPLICACAO.name,
+    r'^\($': tipo_token.PARENTESES_ESQUERDO.name,
+    r'^\)$': tipo_token.PARENTESES_DIREITO.name,
+    r'^\{$': tipo_token.CHAVES_ESQUERDA.name,
+    r'^\}$': tipo_token.CHAVES_DIREITA.name,
+    r'^<$': tipo_token.MENOR.name,
+    r'^>$': tipo_token.MAIOR.name,
+    r'^&&$': tipo_token.SINAL_E.name,
+    r'^\|\|$': tipo_token.SINAL_OU.name,
+    r'^!=$$': tipo_token.DIFERENTE.name,
+    r'^<=$$': tipo_token.MENOR_IGUAL.name,
+    r'^>=$$': tipo_token.MAIOR_IGUAL.name,
+    r'^;$': tipo_token.FIM.name,
+    r'^[a-zA-Z_][a-zA-Z_]*$': tipo_token.IDENTIFICADOR.name,
+    r'^[0-9]+$': tipo_token.INUM.name,
+    r'^[0-9]+\.[0-9]+$': tipo_token.FNUM.name,
+}
+
+
+def lexical_analyser(filepath) -> str:
+    with open(filepath,'r') as f:
+        token_sequence = []
+        tokens = []
+        for line in f:
+            tokens = tokens + line.split(' ')
+        for t in tokens:
+            found = False
+            for regex,category in regex_table.items():
+                if re.match(regex,t):
+                    token_sequence.append(category)
+                    found=True
+                    break
+            if not found:
+                print('Lexical error: ',t)
+                exit(0)
+    token_sequence.append('$')
+    return token_sequence
+
+
 def main():
+    filepath = 'teste.ac'
+    tokens = lexical_analyser(filepath)
+    print(tokens)
+    ts = token_sequence(tokens)
     g = build_grammar()
-    pred_alg = predict_algorithm(g)
+
+    parser = guided_ll1_parser(g)
+    parser.parse(ts)
+
+    """pred_alg = predict_algorithm(g)
     #print(ll1_check.is_ll1(g, pred_alg))
-    entrada = "if(x||x){x=x+1}endif"
     parser = Parser(entrada)
     try:
         program(parser, pred_alg)
@@ -600,6 +667,7 @@ def main():
             print("Erro na análise sintática")
     except SyntaxError as e:
         print(e)
+    """
 
 #teste github desktop
 if __name__ == "__main__":
