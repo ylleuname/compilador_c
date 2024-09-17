@@ -31,7 +31,7 @@ class guided_ll1_parser:
             stck.append(t)
 
     def parse(self, ts: token_sequence):
-        stck = ['S']
+        stck = ['program']
         accept = False
         while not accept:
             top = stck[-1]

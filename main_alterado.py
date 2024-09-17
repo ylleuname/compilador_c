@@ -240,6 +240,7 @@ def lista_statement(ts: token_sequence, p: predict_algorithm):
 
 def declaration_int(ts: token_sequence, p: predict_algorithm):
     if ts.peek() in p.predict(52):
+        print("entrei em declarações int")
         ts.match('INT')
         ts.match('IDENTIFICADOR')
         statements_finais(ts, p)
@@ -265,7 +266,9 @@ def lista_declaration(ts: token_sequence, p: predict_algorithm):
 
 
 def program(ts: token_sequence, p: predict_algorithm):
+    print(ts)
     if ts.peek() in p.predict(50):
+        print("iniciei o programa de verdade")
         lista_declaration(ts, p)
         lista_statement(ts, p)
         ts.match('$')
@@ -519,7 +522,7 @@ def build_grammar():
 
   # Início do compilador: Program chama program e a lista de declarações
   grammar.add_production('program', ['lista_declaration', 'lista_statement', '$'])  # 50
-  grammar.add_production('lista_declaration', ['declaration_int', 'declaration_float'])  # 51
+  grammar.add_production('lista_declaration', ['declaration_int'])  # 51
   grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR', 'statements_finais'])  # 52
   grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'statements_finais'])  # 53
 
@@ -587,6 +590,7 @@ def build_grammar():
 
   grammar.add_terminal('$') #90
   grammar.add_production('lista_declaration', []) #91
+  grammar.add_production('lista_declaration', ['declaration_float'])  # 51
 
 
   #a linguagem não vai sustentar expressões lógicas com outra expressão lógica entre parênteses
@@ -625,8 +629,8 @@ regex_table = {
     r'^[0-9]+\.[0-9]+$': tipo_token.FNUM.name,
 }
 
-
-def lexical_analyser(filepath) -> str:
+#retorna uma lista de strings
+def lexical_analyser(filepath) -> list:
     with open(filepath,'r') as f:
         token_sequence = []
         tokens = []
@@ -640,21 +644,24 @@ def lexical_analyser(filepath) -> str:
                     found=True
                     break
             if not found:
-                print('Lexical error: ',t)
+                print('Lexical error: ', t)
                 exit(0)
     token_sequence.append('$')
     return token_sequence
 
 
 def main():
-    filepath = 'teste.ac'
+    filepath = 'programa.ac'
     tokens = lexical_analyser(filepath)
-    print(tokens)
+    print(type(tokens))
     ts = token_sequence(tokens)
     g = build_grammar()
 
     parser = guided_ll1_parser(g)
     parser.parse(ts)
+
+    predict_alg = predict_algorithm(g)
+    program(ts, predict_alg)
 
     """pred_alg = predict_algorithm(g)
     #print(ll1_check.is_ll1(g, pred_alg))
