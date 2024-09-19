@@ -70,44 +70,50 @@ def criarToken(tipo, valor):
 # Funções do Parser
 def factor(ts: token_sequence, p: predict_algorithm):
     print("entrei em factor")
-    if ts.peek() in p.predict(90):
+    if ts.peek() in p.predict(91):
         ts.match('INUM')
-    elif ts.peek() in p.predict(91):
-        ts.match('FNUM')
     elif ts.peek() in p.predict(92):
-        ts.match('PARENTESES_ESQUERDO')
+        ts.match('FNUM')
     elif ts.peek() in p.predict(93):
+        ts.match('PARENTESES_ESQUERDO')
+    elif ts.peek() in p.predict(94):
         ts.match('PARENTESES_DIREITO')
     else:
         return
 
 
 def multiplicative_operator(ts: token_sequence, p: predict_algorithm):
-    print("entrei em multiplicative_operator")
-    if ts.peek() in p.predict(88):
+    print("entrei em multiplicative_operator -->", ts.peek())
+    if ts.peek() in p.predict(89):
         ts.match('MULTIPLICACAO')
-    elif ts.peek() in p.predict(89):
+    elif ts.peek() in p.predict(90):
         ts.match('DIVISAO')
     else:
         return
 
 
 def term(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(87):
+    print("estive aqui --> ", ts.peek(), p.predict(87))
+    if ts.peek() in p.predict(88):
         print("entrei em term")
         factor(ts, p)
         multiplicative_operator(ts, p)
+        print("passei")
         term(ts, p)
-    elif ts.peek() in p.predict(87):
+    elif ts.peek() in p.predict(88):
+        print("sai do term")
         return
 
 
 def simple_expression_linha(ts: token_sequence, p: predict_algorithm):
+    print("Entrei em simple_expression_linha -->",ts.peek(), p.predict(85))
     if ts.peek() in p.predict(85):
-        print("entrei em simple_expression_linha")
+        print("entrei em simple_expression_linha SOMA")
         ts.match('SOMA')
-        ts.match('SUBTRACAO')
     elif ts.peek() in p.predict(86):
+        print("entrei em simple_expression_linha SUB")
+        ts.match('SUBTRACAO')
+    elif ts.peek() in p.predict(87):
         return
 
 
@@ -121,7 +127,7 @@ def simple_expression(ts: token_sequence, p: predict_algorithm):
 
 
 def logical_operator(ts: token_sequence, p: predict_algorithm):
-    print("entrei em logical_operator")
+    print("entrei em logical_operator -->", ts.peek())
     if ts.peek() in p.predict(76):
         ts.match('SINAL_E')
     elif ts.peek() in p.predict(77):
@@ -144,7 +150,7 @@ def logical_operator(ts: token_sequence, p: predict_algorithm):
 
 def logical_expression_linha(ts: token_sequence, p: predict_algorithm):
     if ts.peek() in p.predict(74):
-        print("entrei em logical_expression_linha")
+        print("entrei em logical_expression_linha -->", ts.peek())
         logical_operator(ts, p)
         simple_expression(ts, p)
     elif ts.peek() in p.predict(75):
@@ -175,6 +181,7 @@ def statements_finais(ts: token_sequence, p: predict_algorithm):
 
 
 def expression(ts: token_sequence, p: predict_algorithm):
+    print("entrei em expression-->", ts.peek(), p.predict(72))
     if ts.peek() in p.predict(72):
         print("entrei em expression")
         logical_expression(ts, p)
@@ -200,7 +207,7 @@ def while_statement(ts: token_sequence, p: predict_algorithm):
         ts.match('WHILE')
         ts.match('PARENTESES_ESQUERDO')
         expression(ts, p)
-        ts.match('PARENTESES_DIREITO')
+        #ts.match('PARENTESES_DIREITO')
         ts.match('CHAVES_ESQUERDA')
         lista_statement(ts, p)
         statements_finais(ts, p)
@@ -209,8 +216,10 @@ def while_statement(ts: token_sequence, p: predict_algorithm):
 
 
 def else_statement(ts: token_sequence, p: predict_algorithm):
+    print("chamei else -->", ts.peek(), p.predict(69))
     if ts.peek() in p.predict(69):
         print("entrei em else")
+        ts.match('ELSE')
         ts.match('CHAVES_ESQUERDA')
         lista_statement(ts, p)
         statements_finais(ts, p)
@@ -220,13 +229,15 @@ def else_statement(ts: token_sequence, p: predict_algorithm):
 
 def if_statement(ts: token_sequence, p: predict_algorithm):
     if ts.peek() in p.predict(68):
-        print("entrei em if statement")
         ts.match('IF')
         ts.match('PARENTESES_ESQUERDO')
         expression(ts, p)
-        ts.match('PARENTESES_DIREITO')
+        #print("sai do expression")
+        #ts.match('PARENTESES_DIREITO')
+        #print("sai do PARENTESES_DIREITO")
         ts.match('CHAVES_ESQUERDA')
         lista_statement(ts, p)
+        statements_finais(ts, p)
         else_statement(ts, p)
         statements_finais(ts, p)
     elif ts.peek() in p.predict(68):
@@ -307,123 +318,6 @@ def program(ts: token_sequence, p: predict_algorithm):
         ts.match('$')
     elif ts.peek() in p.predict(51):
         return
-
-
-"""class Parser(Token):
-    def __init__(self, entrada):
-        self.entrada = entrada
-        self.token_atual = Token(tipo_token.VAZIO, "")
-        self.avancar()
-
-    def avancar(self):
-        self.token_atual, self.entrada = self.proximo_token(self.entrada)
-
-    def consumir(self, tipo_esperado):
-        if self.token_atual.tipo == tipo_esperado:
-            self.avancar()
-        else:
-            raise SyntaxError(
-                f"Erro de sintaxe: token inesperado. "
-                f"Esperado: {nomes_token[tipo_esperado.value - 1]}, "
-                f"Encontrado: {nomes_token[self.token_atual.tipo.value - 1]}"
-            )
-
-    def match(self, tipo_esperado):
-        if self.token_atual.tipo == tipo_esperado:
-            self.consumir(tipo_esperado)
-        else:
-            raise SyntaxError(
-                f"Erro de sintaxe: token esperado não encontrado. "
-                f"Esperado: {nomes_token[tipo_esperado.value - 1]}, "
-                f"Encontrado: {nomes_token[self.token_atual.tipo.value - 1]}"
-            )
-
-    def program(self):
-        self.lista_statement()
-
-
-    #vai "pulando" os espaços em branco para poder ir para o próximo token
-    def proximo_token(self, entrada):
-      while entrada:
-        if entrada[0].isspace():
-            entrada = entrada[1:]
-            continue
-        else:
-            break
-      if not entrada:
-        return criarToken(tipo_token.FIM, ""), ""
-
-      # Verifica cada tipo de token
-      if entrada.startswith("int"):
-        return criarToken(tipo_token.INT, 'int'), entrada[3:]
-      if entrada.startswith("float"):
-        return criarToken(tipo_token.FLOAT, 'float'), entrada[5:]
-      elif entrada.startswith("printf"):
-        return criarToken(tipo_token.PRINTF, 'printf'), entrada[6:]
-      elif entrada.startswith("=="):
-        return criarToken(tipo_token.IGUAL, '=='), entrada[2:]
-      elif entrada[0] == '=':
-        return criarToken(tipo_token.ATRIBUICAO, '='), entrada[1:]
-      elif entrada[0] == '+':
-        return criarToken(tipo_token.SOMA, '+'), entrada[1:]
-      elif entrada[0] == '-':
-        return criarToken(tipo_token.SUBTRACAO, '-'), entrada[1:]
-      elif entrada[0] == '/':
-          return criarToken(tipo_token.DIVISAO, '/'), entrada[1:]
-      elif entrada[0] == '*':
-        return criarToken(tipo_token.MULTIPLICACAO, '*'), entrada[1:]
-      elif entrada[0] == '(':
-        return criarToken(tipo_token.PARENTESES_ESQUERDO, '('), entrada[1:]
-      elif entrada[0] == ')':
-          return criarToken(tipo_token.PARENTESES_DIREITO, ')'), entrada[1:]
-      elif entrada[0] == '{':
-        return criarToken(tipo_token.CHAVES_ESQUERDA, '{'), entrada[1:]
-      elif entrada[0] == '}':
-        return criarToken(tipo_token.CHAVES_DIREITA, '}'), entrada[1:]
-      elif entrada[0] == '<':
-        return criarToken(tipo_token.MENOR, '<'), entrada[1:]
-      elif entrada[0] == '>':
-        return criarToken(tipo_token.MAIOR, '>'), entrada[1:]
-      elif entrada[0] == 'endif':
-        return criarToken(tipo_token.ENDIF, 'endif'), entrada[5:]
-      elif entrada[0] == '$':
-        return criarToken(tipo_token.FIM, '$'), entrada[1:]
-      elif entrada.startswith("if"):
-        return criarToken(tipo_token.IF, "if"), entrada[2:]
-      elif entrada.startswith("else"):
-        return criarToken(tipo_token.ELSE, "else"), entrada[4:]
-      elif entrada.startswith("while"):
-        return criarToken(tipo_token.WHILE, "while"), entrada[5:]
-      if entrada.startswith("&&"):
-        return criarToken(tipo_token.SINAL_E, '&&'), entrada[2:]
-      if entrada.startswith("||"):
-        return criarToken(tipo_token.SINAL_OU, '||'), entrada[2:]
-      if entrada.startswith("!="):
-        return criarToken(tipo_token.DIFERENTE, '!='), entrada[2:]
-      if entrada.startswith("<="):
-        return criarToken(tipo_token.MENOR_IGUAL, '<='), entrada[2:]
-      if entrada.startswith(">="):
-        return criarToken(tipo_token.MAIOR_IGUAL, '>='), entrada[2:]
-      #Caso onde a entrada é um dígito
-      elif entrada[0].isdigit():
-        inicio = 0
-        while inicio < len(entrada) and entrada[inicio].isdigit():
-          inicio += 1
-        if inicio < len(entrada) and entrada[inicio] == '.':
-          inicio += 1
-          while inicio < len(entrada) and entrada[inicio].isdigit():
-            inicio += 1
-          return criarToken(tipo_token.FNUM, entrada[:inicio]), entrada[inicio:]
-        return criarToken(tipo_token.INUM, entrada[:inicio]), entrada[inicio:]
-      #Caso onde a entrada é uma palavra (Identificador)
-      elif entrada[0].isalpha():
-        inicio = 0
-        while inicio < len(entrada) and entrada[inicio].isalpha():
-          inicio += 1
-        return criarToken(tipo_token.IDENTIFICADOR, entrada[:inicio]), entrada[inicio:]
-      else:
-        return criarToken(tipo_token.VAZIO, ""), entrada[1:]"""
-
 
 class Grammar:
     def __init__(self) -> None:
@@ -594,7 +488,7 @@ def build_grammar():
                                           'statements_finais'])  # 64
 
   # Else
-  grammar.add_production('else_statement', ['CHAVES_ESQUERDA', 'lista_statement', 'statements_finais'])  # 65
+  grammar.add_production('else_statement', ['ELSE', 'CHAVES_ESQUERDA', 'lista_statement', 'statements_finais'])  # 65
   grammar.add_production('else_statement', [])  # 66
 
   # Loop While
@@ -619,7 +513,8 @@ def build_grammar():
 
   # Expressões aritméticas (SOMA E SUBTRAÇÃO)
   grammar.add_production('simple_expression', ['term', 'simple_expression_linha'])  # 80
-  grammar.add_production('simple_expression_linha', ['SOMA', 'SUBTRACAO'])  # 81
+  grammar.add_production('simple_expression_linha', ['SOMA'])  # 81
+  grammar.add_production('simple_expression_linha', ['SUBTRACAO'])  # 81
   grammar.add_production('simple_expression_linha', [])  # 82
 
   # Expressões aritmética (MULTIPLICAÇÃO E DIVISÃO)
@@ -627,13 +522,12 @@ def build_grammar():
   grammar.add_production('multiplicative_operator', ['MULTIPLICACAO'])  # 84
   grammar.add_production('multiplicative_operator', ['DIVISAO'])  # 85
 
+
   # Termos de uma expressão (números e parênteses)
   grammar.add_production('factor', ['INUM'])  # 86
   grammar.add_production('factor', ['FNUM'])  # 87
   grammar.add_production('factor', ['PARENTESES_ESQUERDO'])  # 88
   grammar.add_production('factor', ['PARENTESES_DIREITO'])  # 89
-
-
 
 
   #a linguagem não vai sustentar expressões lógicas com outra expressão lógica entre parênteses
@@ -674,19 +568,33 @@ regex_table = {
 def lexical_analyser(filepath) -> list:
     with open(filepath,'r') as f:
         token_sequence = []
-        tokens = []
-        for line in f:
-            tokens = tokens + line.split(' ')
-        for t in tokens:
-            found = False
-            for regex,category in regex_table.items():
-                if re.match(regex,t):
-                    token_sequence.append(category)
-                    found=True
-                    break
-            if not found:
-                print('Lexical error: ', t)
-                exit(0)
+        identificadores_declarados = set()
+        declarando = False
+        for i, line in enumerate(f, start=1):
+            tokens = line.split()
+            for t in tokens:
+                found = False
+                for regex, category in regex_table.items():
+                    if re.match(regex, t):
+                        #print(regex, category, t)
+                        if category == tipo_token.IDENTIFICADOR.name:
+                            
+                            if declarando:
+                                if t in identificadores_declarados:
+                                    print(f"Erro: Identificador '{t}' já declarado. Linha: {i}")
+                                    exit(0)
+                                else:
+                                    identificadores_declarados.add(t)
+                        token_sequence.append(category)
+                        found = True
+                        if category in [tipo_token.INT.name, tipo_token.FLOAT.name]:
+                            declarando = True
+                        elif category == tipo_token.FIM.name:  # Reinicia após ';'
+                            declarando = False
+                        break
+                if not found:
+                    print(f"Erro Léxico: '{t}'. Linha: {i}")
+                    exit(0)
     token_sequence.append('$')
     return token_sequence
 
@@ -703,22 +611,9 @@ def main():
     #parser.parse(ts)
 
     predict_alg = predict_algorithm(g)
-    #print(ll1_check.is_ll1(g, predict_alg))
+    print("é LL1: ", ll1_check.is_ll1(g, predict_alg))
     program(ts, predict_alg)
 
-    """pred_alg = predict_algorithm(g)
-    #print(ll1_check.is_ll1(g, pred_alg))
-    parser = Parser(entrada)
-    try:
-        program(parser, pred_alg)
-        if parser.token_atual.tipo == tipo_token.FIM:
-            print("Análise sintática concluída com sucesso!")
-        else:
-            print("Erro na análise sintática")
-    except SyntaxError as e:
-        print(e)
-    """
 
-#teste github desktop
 if __name__ == "__main__":
     main()
