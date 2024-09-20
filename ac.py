@@ -130,7 +130,7 @@ def Val(ts:token_sequence, p:predict_algorithm)->None:
     
     
 if __name__ == '__main__':
-    filepath = 'programa.ac'
+    filepath = 'teste-basico.ac'
     tokens = lexical_analyser(filepath)
     ts = token_sequence(tokens)
     G = create_ac_grammar()

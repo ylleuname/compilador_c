@@ -12,7 +12,7 @@ import re
 class tipo_token(Enum):
   INT = 1
   PRINTF = 2
-  IDENTIFICADOR_ASSIGNMENT = 3
+  IDENTIFICADOR = 3
   ATRIBUICAO = 4
   SOMA = 5
   SUBTRACAO = 6
@@ -42,7 +42,6 @@ class tipo_token(Enum):
   MENOR_IGUAL = 29
   MAIOR_IGUAL = 30
   ENDIF = 31
-  VARIAVEL = 32
 #começar: tabelas de signos q vai ter o nome de cada variavel com um endereço único
 class Token:
   def __init__(self, tipo, valor):
@@ -53,14 +52,14 @@ class Token:
     return f"Token({self.tipo}, '{self.valor}')"
 
 nomes_token = [
-    "DECLARACAO_INT", "IMPRIMIR", "IDENTIFICADOR_ASSIGNMENT", "ATRIBUICAO", "SOMA",
+    "DECLARACAO_INT", "IMPRIMIR", "IDENTIFICADOR", "ATRIBUICAO", "SOMA",
     "SUBTRACAO", "INUM", "FNUM", "ESPACO", "FIM", "NENHUM",
     "IF", "ELSE",
     "PARENTESE_ESQ", "PARENTESE_DIR", "DECLARACAO_FLOAT", "DECLARACAO_FLOAT",
     "OU", "E",
     "DIVISAO", "MULTIPLICACAO",
     "WHILE", "CHAVES_ESQ", "CHAVES_DIR",
-    "IGUAL", "DIFERENTE", "MENOR", "MAIOR", "MENOR_IGUAL", "MAIOR_IGUAL", "ENDIF", "VARIAVEL",
+    "IGUAL", "DIFERENTE", "MENOR", "MAIOR", "MENOR_IGUAL", "MAIOR_IGUAL", "ENDIF"
 ]
 
 def criarToken(tipo, valor):
@@ -71,162 +70,140 @@ def criarToken(tipo, valor):
 # Funções do Parser
 def factor(ts: token_sequence, p: predict_algorithm):
     print("entrei em factor")
-    print("valores de factor", ts.peek())
-    if ts.peek() in p.predict(92):
+    if ts.peek() in p.predict(90):
         ts.match('INUM')
-    elif ts.peek() in p.predict(93):
+    elif ts.peek() in p.predict(91):
         ts.match('FNUM')
-    elif ts.peek() in p.predict(94):
+    elif ts.peek() in p.predict(92):
         ts.match('PARENTESES_ESQUERDO')
-    elif ts.peek() in p.predict(95):
+    elif ts.peek() in p.predict(93):
         ts.match('PARENTESES_DIREITO')
-    elif ts.peek() in p.predict(96):
-        print("entrei em variavel", ts.peek())
-        ts.match('VARIAVEL')
     else:
         return
 
 
 def multiplicative_operator(ts: token_sequence, p: predict_algorithm):
-    print("entrei em multiplicative_operator -->", ts.peek())
-    if ts.peek() in p.predict(90):
+    print("entrei em multiplicative_operator")
+    if ts.peek() in p.predict(88):
         ts.match('MULTIPLICACAO')
-    elif ts.peek() in p.predict(91):
+    elif ts.peek() in p.predict(89):
         ts.match('DIVISAO')
     else:
         return
 
 
 def term(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(89):
+    if ts.peek() in p.predict(87):
         print("entrei em term")
         factor(ts, p)
         multiplicative_operator(ts, p)
-        print("passei")
         term(ts, p)
-    elif ts.peek() in p.predict(89):
-        print("sai do term")
+    elif ts.peek() in p.predict(87):
         return
 
 
 def simple_expression_linha(ts: token_sequence, p: predict_algorithm):
-    print("Entrei em simple_expression_linha -->",ts.peek(), p.predict(85))
-    if ts.peek() in p.predict(86):
-        print("entrei em simple_expression_linha SOMA")
+    if ts.peek() in p.predict(85):
+        print("entrei em simple_expression_linha")
         ts.match('SOMA')
-    elif ts.peek() in p.predict(87):
-        print("entrei em simple_expression_linha SUB")
         ts.match('SUBTRACAO')
-    elif ts.peek() in p.predict(88):
+    elif ts.peek() in p.predict(86):
         return
 
 
 def simple_expression(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(85):
-
+    if ts.peek() in p.predict(84):
+        print("entrei em simple_expression")
         term(ts, p)
+        print("sai de term no simple_expression")
         simple_expression_linha(ts, p)
-    elif ts.peek() in p.predict(85):
+
+    elif ts.peek() in p.predict(84):
         return
 
 
 def logical_operator(ts: token_sequence, p: predict_algorithm):
-    #print("entrei em logical_operator -->", ts.peek())
-    if ts.peek() in p.predict(77):
+    print("entrei em logical_operator")
+    if ts.peek() in p.predict(76):
         ts.match('SINAL_E')
-    elif ts.peek() in p.predict(78):
+    elif ts.peek() in p.predict(77):
         ts.match('SINAL_OU')
-    elif ts.peek() in p.predict(79):
+    elif ts.peek() in p.predict(78):
         ts.match('IGUAL')
-    elif ts.peek() in p.predict(80):
+    elif ts.peek() in p.predict(79):
         ts.match('DIFERENTE')
-    elif ts.peek() in p.predict(81):
+    elif ts.peek() in p.predict(80):
         ts.match('MENOR')
-    elif ts.peek() in p.predict(82):
+    elif ts.peek() in p.predict(81):
         ts.match('MAIOR')
-    elif ts.peek() in p.predict(83):
+    elif ts.peek() in p.predict(82):
         ts.match('MENOR_IGUAL')
-    elif ts.peek() in p.predict(84):
+    elif ts.peek() in p.predict(83):
         ts.match('MAIOR_IGUAL')
-    elif ts.peek() in p.predict(77) or ts.peek() in p.predict(78) or ts.peek() in p.predict(79) or ts.peek() in p.predict(80) or ts.peek() in p.predict(81) or ts.peek() in p.predict(82) or ts.peek() in p.predict(83) or ts.peek() in p.predict(84):
+    elif ts.peek() in p.predict(76) or ts.peek() in p.predict(77) or ts.peek() in p.predict(78) or ts.peek() in p.predict(79) or ts.peek() in p.predict(80) or ts.peek() in p.predict(81) or ts.peek() in p.predict(82) or ts.peek() in p.predict(83):
         return
 
 
 def logical_expression_linha(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(75):
-        #print("entrei em logical_expression_linha -->", ts.peek())
+    if ts.peek() in p.predict(74):
+        print("entrei em logical_expression_linha")
         logical_operator(ts, p)
         simple_expression(ts, p)
-    elif ts.peek() in p.predict(76):
+    elif ts.peek() in p.predict(75):
         return
 
 
 def logical_expression(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(74):
-        #print("entrei em logical_expression")
+    if ts.peek() in p.predict(73):
+        print("entrei em logical_expression")
         simple_expression(ts, p)
         logical_expression_linha(ts, p)
-    elif ts.peek() in p.predict(74):
-        return
-
-
-def statements_finais(ts: token_sequence, p: predict_algorithm):
-    #print("entrei em statements_finais")
-    #print("valores de sf", ts.peek())
-    if ts.peek() in p.predict(65):
-        #print("entrei em fim")
-        ts.match('FIM')
-    elif ts.peek() in p.predict(66):
-        #print("entrei em chaves_direita")
-        ts.match('CHAVES_DIREITA')
-    elif ts.peek() in p.predict(67):
-        #print("entrei em endif")
-        ts.match('ENDIF')
-    elif ts.peek() in p.predict(65) or ts.peek() in p.predict(66) or ts.peek() in p.predict(67):
-        return
-
-
-def expression(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(73):
-        #print("entrei em expression")
-        logical_expression(ts, p)
-        assignment(ts, p)
     elif ts.peek() in p.predict(73):
         return
 
 
-def assignment(ts: token_sequence, p: predict_algorithm):
-    #print("#print de assignment" , ts.peek(), p.predict(68))
-    if ts.peek() in p.predict(68):
-        #print("entrei em assignment")
-        ts.match('IDENTIFICADOR_ASSIGNMENT')
-        ts.match('ATRIBUICAO')
-        expression(ts, p)
-        statements_finais(ts, p)
-    elif ts.peek() in p.predict(68):
+def statements_finais(ts: token_sequence, p: predict_algorithm):
+    if ts.peek() in p.predict(64):
+        print("entrei em fim")
+        ts.match('FIM')
+    elif ts.peek() in p.predict(65):
+        print("entrei em chaves_direita")
+        ts.match('CHAVES_DIREITA')
+    elif ts.peek() in p.predict(66):
+        print("entrei em endif")
+        ts.match('ENDIF')
+    elif ts.peek() in p.predict(64) or ts.peek() in p.predict(65) or ts.peek() in p.predict(66):
         return
 
 
-def while_statement(ts: token_sequence, p: predict_algorithm):
+def expression(ts: token_sequence, p: predict_algorithm):
     if ts.peek() in p.predict(72):
-        #print("entrei em while")
-        ts.match('WHILE')
-        ts.match('PARENTESES_ESQUERDO')
-        expression(ts, p)
-        #ts.match('PARENTESES_DIREITO')
-        ts.match('CHAVES_ESQUERDA')
-        lista_statement(ts, p)
-        #ts.match('CHAVES_DIREITA')
-        statements_finais(ts, p)
+        print("entrei em expression")
+        logical_expression(ts, p)
+        assignment(ts, p)
     elif ts.peek() in p.predict(72):
         return
 
 
-def else_statement(ts: token_sequence, p: predict_algorithm):
-    #print("chamei else -->", ts.peek(), p.predict(69))
-    if ts.peek() in p.predict(70):
-        #print("entrei em else")
-        ts.match('ELSE')
+def assignment(ts: token_sequence, p: predict_algorithm):
+    if ts.peek() in p.predict(67):
+        print("entrei em assignment")
+        ts.match('IDENTIFICADOR')
+        ts.match('ATRIBUICAO')
+        expression(ts, p)
+        statements_finais(ts, p)
+    elif ts.peek() in p.predict(67):
+        return
+
+
+def while_statement(ts: token_sequence, p: predict_algorithm):
+    if ts.peek() in p.predict(71):
+        print("entrei em while")
+        ts.match('WHILE')
+        ts.match('PARENTESES_ESQUERDO')
+        expression(ts, p)
+        print("reconheci expressoes")
+        #ts.match('PARENTESES_DIREITO')
         ts.match('CHAVES_ESQUERDA')
         lista_statement(ts, p)
         statements_finais(ts, p)
@@ -234,97 +211,225 @@ def else_statement(ts: token_sequence, p: predict_algorithm):
         return
 
 
-def if_statement(ts: token_sequence, p: predict_algorithm):
+def else_statement(ts: token_sequence, p: predict_algorithm):
+    print("chamei else")
     if ts.peek() in p.predict(69):
-        ts.match('IF')
-        ts.match('PARENTESES_ESQUERDO')
-        expression(ts, p)
-        #print("sai do expression")
-        #ts.match('PARENTESES_DIREITO')
-        #print("sai do PARENTESES_DIREITO")
+        ts.match('ELSE')
         ts.match('CHAVES_ESQUERDA')
         lista_statement(ts, p)
         statements_finais(ts, p)
+    elif ts.peek() in p.predict(70):
+        return
+
+
+def if_statement(ts: token_sequence, p: predict_algorithm):
+    if ts.peek() in p.predict(68):
+        print("entrei em if statement")
+        ts.match('IF')
+        ts.match('PARENTESES_ESQUERDO')
+        expression(ts, p)
+        #ts.match('PARENTESES_DIREITO')
+        ts.match('CHAVES_ESQUERDA')
+        lista_statement(ts, p)
+        print("sai de lista statements")
         else_statement(ts, p)
         statements_finais(ts, p)
-    elif ts.peek() in p.predict(69):
+    elif ts.peek() in p.predict(68):
         return
 
 
 def statement(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(61):
-        #print("entrei em if statement - statement")
+    if ts.peek() in p.predict(60):
+        print("entrei em if statement - statement")
         if_statement(ts, p)
-    elif ts.peek() in p.predict(62):
-        #print("entrei em while - statement")
+    elif ts.peek() in p.predict(61):
+        print("entrei em while - statement")
         while_statement(ts, p)
-    elif ts.peek() in p.predict(63):
-        #print("entrei em assignment -statement")
+    elif ts.peek() in p.predict(62):
+        print("entrei em assignment -statement")
         assignment(ts, p)
-    elif ts.peek() in p.predict(64):
-        #print("entrei em expression -statement")
+    elif ts.peek() in p.predict(63):
+        print("entrei em expression -statement")
         expression(ts, p)
-    elif ts.peek() in p.predict(61) or ts.peek() in p.predict(62) or ts.peek() in p.predict(63) or ts.peek() in p.predict(64):
+    elif ts.peek() in p.predict(60) or ts.peek() in p.predict(61) or ts.peek() in p.predict(62) or ts.peek() in p.predict(63):
         return
 
 
 def lista_statement(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(59):
-        #print("entrei em lista statement")
+    if ts.peek() in p.predict(58):
+        print("entrei em lista statement")
         statement(ts, p)
         lista_statement(ts, p)
-    elif ts.peek() in p.predict(60):
+    elif ts.peek() in p.predict(59):
         return
 
 
 def declaration_int(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(57):
-        #print("entrei em declarações int")
+    if ts.peek() in p.predict(56):
+        print("entrei em declarações int")
         ts.match('INT')
-        ts.match('IDENTIFICADOR_ASSIGNMENT')
+        ts.match('IDENTIFICADOR')
         statements_finais(ts, p)
-    elif ts.peek() in p.predict(57):
+    elif ts.peek() in p.predict(56):
         return
 
 
 def declaration_float(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(58):
-        #print("entrei no float")
+    if ts.peek() in p.predict(57):
+        print("entrei no float")
         ts.match('FLOAT')
-        ts.match('IDENTIFICADOR_ASSIGNMENT')
+        ts.match('IDENTIFICADOR')
         statements_finais(ts, p)
-    elif ts.peek() in p.predict(58):
+    elif ts.peek() in p.predict(57):
         return
 
 def declarations(ts:token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(55):
-        #print("entrei em declaration declaration_int")
+    if ts.peek() in p.predict(54):
+        print("entrei em declaration declaration_int")
         declaration_int(ts, p)
-    elif ts.peek() in p.predict(56):
-        #print("entrei em declaration declaration_float")
-        declaration_float(ts, p)
     elif ts.peek() in p.predict(55):
+        print("entrei em declaration declaration_float")
+        declaration_float(ts, p)
+    elif ts.peek() in p.predict(50):
         return
 
 
 def lista_declaration(ts: token_sequence, p: predict_algorithm):
-    if ts.peek() in p.predict(53):
-        #print("entrei em lista_declaration")
+    if ts.peek() in p.predict(52):
+        print("entrei em lista_declaration")
         declarations(ts, p)
         lista_declaration(ts, p)
-    elif ts.peek() in p.predict(54):
+    elif ts.peek() in p.predict(53):
         return
 
 
 def program(ts: token_sequence, p: predict_algorithm):
-    #print(ts)
-    if ts.peek() in p.predict(52):
-        #print("iniciei o programa de verdade")
+    print(ts)
+    if ts.peek() in p.predict(51):
+        print("iniciei o programa de verdade")
         lista_declaration(ts, p)
         lista_statement(ts, p)
         ts.match('$')
-    elif ts.peek() in p.predict(52):
+        print("terminei o programa")
+    elif ts.peek() in p.predict(51):
         return
+
+
+"""class Parser(Token):
+    def __init__(self, entrada):
+        self.entrada = entrada
+        self.token_atual = Token(tipo_token.VAZIO, "")
+        self.avancar()
+
+    def avancar(self):
+        self.token_atual, self.entrada = self.proximo_token(self.entrada)
+
+    def consumir(self, tipo_esperado):
+        if self.token_atual.tipo == tipo_esperado:
+            self.avancar()
+        else:
+            raise SyntaxError(
+                f"Erro de sintaxe: token inesperado. "
+                f"Esperado: {nomes_token[tipo_esperado.value - 1]}, "
+                f"Encontrado: {nomes_token[self.token_atual.tipo.value - 1]}"
+            )
+
+    def match(self, tipo_esperado):
+        if self.token_atual.tipo == tipo_esperado:
+            self.consumir(tipo_esperado)
+        else:
+            raise SyntaxError(
+                f"Erro de sintaxe: token esperado não encontrado. "
+                f"Esperado: {nomes_token[tipo_esperado.value - 1]}, "
+                f"Encontrado: {nomes_token[self.token_atual.tipo.value - 1]}"
+            )
+
+    def program(self):
+        self.lista_statement()
+
+
+    #vai "pulando" os espaços em branco para poder ir para o próximo token
+    def proximo_token(self, entrada):
+      while entrada:
+        if entrada[0].isspace():
+            entrada = entrada[1:]
+            continue
+        else:
+            break
+      if not entrada:
+        return criarToken(tipo_token.FIM, ""), ""
+
+      # Verifica cada tipo de token
+      if entrada.startswith("int"):
+        return criarToken(tipo_token.INT, 'int'), entrada[3:]
+      if entrada.startswith("float"):
+        return criarToken(tipo_token.FLOAT, 'float'), entrada[5:]
+      elif entrada.startswith("printf"):
+        return criarToken(tipo_token.PRINTF, 'printf'), entrada[6:]
+      elif entrada.startswith("=="):
+        return criarToken(tipo_token.IGUAL, '=='), entrada[2:]
+      elif entrada[0] == '=':
+        return criarToken(tipo_token.ATRIBUICAO, '='), entrada[1:]
+      elif entrada[0] == '+':
+        return criarToken(tipo_token.SOMA, '+'), entrada[1:]
+      elif entrada[0] == '-':
+        return criarToken(tipo_token.SUBTRACAO, '-'), entrada[1:]
+      elif entrada[0] == '/':
+          return criarToken(tipo_token.DIVISAO, '/'), entrada[1:]
+      elif entrada[0] == '*':
+        return criarToken(tipo_token.MULTIPLICACAO, '*'), entrada[1:]
+      elif entrada[0] == '(':
+        return criarToken(tipo_token.PARENTESES_ESQUERDO, '('), entrada[1:]
+      elif entrada[0] == ')':
+          return criarToken(tipo_token.PARENTESES_DIREITO, ')'), entrada[1:]
+      elif entrada[0] == '{':
+        return criarToken(tipo_token.CHAVES_ESQUERDA, '{'), entrada[1:]
+      elif entrada[0] == '}':
+        return criarToken(tipo_token.CHAVES_DIREITA, '}'), entrada[1:]
+      elif entrada[0] == '<':
+        return criarToken(tipo_token.MENOR, '<'), entrada[1:]
+      elif entrada[0] == '>':
+        return criarToken(tipo_token.MAIOR, '>'), entrada[1:]
+      elif entrada[0] == 'endif':
+        return criarToken(tipo_token.ENDIF, 'endif'), entrada[5:]
+      elif entrada[0] == '$':
+        return criarToken(tipo_token.FIM, '$'), entrada[1:]
+      elif entrada.startswith("if"):
+        return criarToken(tipo_token.IF, "if"), entrada[2:]
+      elif entrada.startswith("else"):
+        return criarToken(tipo_token.ELSE, "else"), entrada[4:]
+      elif entrada.startswith("while"):
+        return criarToken(tipo_token.WHILE, "while"), entrada[5:]
+      if entrada.startswith("&&"):
+        return criarToken(tipo_token.SINAL_E, '&&'), entrada[2:]
+      if entrada.startswith("||"):
+        return criarToken(tipo_token.SINAL_OU, '||'), entrada[2:]
+      if entrada.startswith("!="):
+        return criarToken(tipo_token.DIFERENTE, '!='), entrada[2:]
+      if entrada.startswith("<="):
+        return criarToken(tipo_token.MENOR_IGUAL, '<='), entrada[2:]
+      if entrada.startswith(">="):
+        return criarToken(tipo_token.MAIOR_IGUAL, '>='), entrada[2:]
+      #Caso onde a entrada é um dígito
+      elif entrada[0].isdigit():
+        inicio = 0
+        while inicio < len(entrada) and entrada[inicio].isdigit():
+          inicio += 1
+        if inicio < len(entrada) and entrada[inicio] == '.':
+          inicio += 1
+          while inicio < len(entrada) and entrada[inicio].isdigit():
+            inicio += 1
+          return criarToken(tipo_token.FNUM, entrada[:inicio]), entrada[inicio:]
+        return criarToken(tipo_token.INUM, entrada[:inicio]), entrada[inicio:]
+      #Caso onde a entrada é uma palavra (Identificador)
+      elif entrada[0].isalpha():
+        inicio = 0
+        while inicio < len(entrada) and entrada[inicio].isalpha():
+          inicio += 1
+        return criarToken(tipo_token.IDENTIFICADOR, entrada[:inicio]), entrada[inicio:]
+      else:
+        return criarToken(tipo_token.VAZIO, ""), entrada[1:]"""
+
 
 class Grammar:
     def __init__(self) -> None:
@@ -410,7 +515,7 @@ def build_grammar():
   # Definir os terminais
   grammar.add_terminal('INT')
   grammar.add_terminal('FLOAT')
-  grammar.add_terminal('IDENTIFICADOR_ASSIGNMENT')
+  grammar.add_terminal('IDENTIFICADOR')
   grammar.add_terminal('ATRIBUICAO')
   grammar.add_terminal('SOMA')
   grammar.add_terminal('SUBTRACAO')
@@ -436,7 +541,6 @@ def build_grammar():
   grammar.add_terminal('INUM')
   grammar.add_terminal('FNUM')
   grammar.add_terminal('$')
-  grammar.add_terminal('VARIAVEL')
 
   # Definir os não-terminais
   grammar.grammar('program')
@@ -470,8 +574,8 @@ def build_grammar():
   grammar.add_production('lista_declaration', [])
   grammar.add_production('declarations', ['declaration_int'])
   grammar.add_production('declarations', ['declaration_float'])
-  grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR_ASSIGNMENT', 'statements_finais'])  # 52
-  grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR_ASSIGNMENT', 'statements_finais'])  # 53
+  grammar.add_production('declaration_int', ['INT', 'IDENTIFICADOR', 'statements_finais'])  # 52
+  grammar.add_production('declaration_float', ['FLOAT', 'IDENTIFICADOR', 'statements_finais'])  # 53
 
 
   # Lista de statements e Statements
@@ -488,10 +592,10 @@ def build_grammar():
   grammar.add_production('statements_finais', ['ENDIF'])  # 62
 
   # Assignment
-  grammar.add_production('assignment', ['IDENTIFICADOR_ASSIGNMENT', 'ATRIBUICAO', 'expression', 'statements_finais'])  # 63
+  grammar.add_production('assignment', ['IDENTIFICADOR', 'ATRIBUICAO', 'expression', 'statements_finais'])  # 63
 
   # Condicional If
-  grammar.add_production('if_statement', ['IF', 'PARENTESES_ESQUERDO', 'expression', 'PARENTESES_DIREITO',
+  grammar.add_production('if_statement', ['IF', 'PARENTESES_ESQUERDO', 'expression',
                                           'CHAVES_ESQUERDA', 'lista_statement', 'else_statement',
                                           'statements_finais'])  # 64
 
@@ -521,8 +625,7 @@ def build_grammar():
 
   # Expressões aritméticas (SOMA E SUBTRAÇÃO)
   grammar.add_production('simple_expression', ['term', 'simple_expression_linha'])  # 80
-  grammar.add_production('simple_expression_linha', ['SOMA'])  # 81
-  grammar.add_production('simple_expression_linha', ['SUBTRACAO'])  # 81
+  grammar.add_production('simple_expression_linha', ['SOMA', 'SUBTRACAO'])  # 81
   grammar.add_production('simple_expression_linha', [])  # 82
 
   # Expressões aritmética (MULTIPLICAÇÃO E DIVISÃO)
@@ -530,13 +633,11 @@ def build_grammar():
   grammar.add_production('multiplicative_operator', ['MULTIPLICACAO'])  # 84
   grammar.add_production('multiplicative_operator', ['DIVISAO'])  # 85
 
-
   # Termos de uma expressão (números e parênteses)
   grammar.add_production('factor', ['INUM'])  # 86
   grammar.add_production('factor', ['FNUM'])  # 87
   grammar.add_production('factor', ['PARENTESES_ESQUERDO'])  # 88
   grammar.add_production('factor', ['PARENTESES_DIREITO'])  # 89
-  grammar.add_production('factor', ['VARIAVEL'])
 
 
   #a linguagem não vai sustentar expressões lógicas com outra expressão lógica entre parênteses
@@ -568,112 +669,60 @@ regex_table = {
     r'^<=$$': tipo_token.MENOR_IGUAL.name,
     r'^>=$$': tipo_token.MAIOR_IGUAL.name,
     r'^;$': tipo_token.FIM.name,
-    r'^_[a-zA-Z]+$': tipo_token.IDENTIFICADOR_ASSIGNMENT.name,
-    r'^[a-zA-Z_]{1}$': tipo_token.VARIAVEL.name,
+    r'^[a-zA-Z_][a-zA-Z_]*$': tipo_token.IDENTIFICADOR.name,
     r'^[0-9]+$': tipo_token.INUM.name,
     r'^[0-9]+\.[0-9]+$': tipo_token.FNUM.name,
 }
 
 #retorna uma lista de strings
 def lexical_analyser(filepath) -> list:
-    topo_stack = 1
-    with open(filepath, 'r') as f_entrada, open('output.sam', 'w') as f_saida:
-        label_counter = 0
+    with open(filepath,'r') as f:
         token_sequence = []
-        identificadores_declarados = set()
-        declarando = False
-        for i, line in enumerate(f_entrada, start=1):
-            tokens = line.split()
-            for t in tokens:
-                found = False
-                for regex, category in regex_table.items():
-                    if re.match(regex, t):
-                        #print(regex, category, t)
-                        if category == tipo_token.IDENTIFICADOR_ASSIGNMENT.name:
-                            if declarando:
-                                if t in identificadores_declarados:
-                                    print(f"Erro: Identificador '{t}' já declarado. Linha: {i}")
-                                    exit(0)
-                                else:
-                                    identificadores_declarados.add(t)
-                        token_sequence.append(category)
-                        found = True
-
-                        # Gerar código SAM
-                        if category == tipo_token.INT.name:
-                            f_saida.write(f"ADDSP 4\n")  # Alocar espaço para int
-                        elif category == tipo_token.FLOAT.name:
-                            f_saida.write(f"ADDSP 4\n")  # Alocar espaço para float
-                        #elif category == tipo_token.IDENTIFICADOR.name:
-                        #    f_saida.write(f"PUSHIMM {t}\n")  # Carregar variável
-                        elif category == tipo_token.INUM.name:
-                            f_saida.write(f"PUSHIMM {t}\n")  # Empilhar inteiro
-                            f_saida.write(f"STOREABS {topo_stack}\n")  # Empilhar inteiro
-                            topo_stack += 1
-                        elif category == tipo_token.FNUM.name:
-                            f_saida.write(f"PUSHIMM {t}\n")  # Empilhar float
-                        #elif category == tipo_token.ATRIBUICAO.name:
-                        #    f_saida.write(f"STOREABS {t}\n")  # Atribuir valor
-                        elif category == tipo_token.SOMA.name:
-                            f_saida.write(f"ADD\n")  # Operação de soma
-                        elif category == tipo_token.SUBTRACAO.name:
-                            f_saida.write(f"SUB\n")  # Operação de subtração
-                        elif category == tipo_token.MULTIPLICACAO.name:
-                            f_saida.write(f"TIMES\n")  # Operação de multiplicação
-                        elif category == tipo_token.DIVISAO.name:
-                            f_saida.write(f"DIV\n")  # Operação de divisão
-                        #elif category == tipo_token.IGUAL.name:
-                        #    f_saida.write(f"ISNIL\n")  # Verificar se é igual a 0
-                        elif category == tipo_token.MENOR.name:
-                            f_saida.write(f"LESS\n")  # Verificar se é menor
-                        elif category == tipo_token.MAIOR.name:
-                            f_saida.write(f"GREATER\n")  # Verificar se é maior
-                        elif category == tipo_token.DIFERENTE.name:
-                            f_saida.write(f"ISNIL\n")  # Verificar se é igual a 0
-                            #f_saida.write(f"JUMPC ELSE\n")  # Pular para else caso seja igual a 0
-                        elif category == tipo_token.SINAL_OU.name:
-                            f_saida.write(f"OR\n")
-                            #f_saida.write(f"ELSE:\n")
-                        elif category == tipo_token.SINAL_E.name:
-                            f_saida.write(f"AND\n")
-                        #elif category == tipo_token.IF.name:
-                        #    f_saida.write(f"ISNIL\n")  # Verifica a condição
-                        #    false_label = f"else_{label_counter}"  # Label para o else
-                        #    f_saida.write(f"JUMPC {false_label}\n")  # Pular para o else se a condição for falsa
-                        #    label_counter += 1
-                        #elif category == tipo_token.ENDIF.name:
-                        #    f_saida.write(f"STOP \n")
-                        #    f_saida.write(f"ENDIF: \n")
-
-                        if category in [tipo_token.INT.name, tipo_token.FLOAT.name]:
-                            declarando = True
-                        elif category == tipo_token.FIM.name:  # Reinicia após ';'
-                            declarando = False
-                        break
-                if not found:
-                    print(f"Erro Léxico: '{t}'. Linha: {i}")
-                    exit(0)
-
+        tokens = []
+        for line in f:
+            tokens = tokens + line.split(' ')
+        for t in tokens:
+            found = False
+            for regex,category in regex_table.items():
+                if re.match(regex,t):
+                    token_sequence.append(category)
+                    found=True
+                    break
+            if not found:
+                print('Lexical error: ', t)
+                exit(0)
     token_sequence.append('$')
-    #print("TOKEN_SQ", token_sequence)
     return token_sequence
 
 
 def main():
-    filepath = 'erro-sintatico.ac'
+    filepath = 'teste-basico.ac'
     tokens = lexical_analyser(filepath)
-    #print(type(tokens))
+    print(type(tokens))
     ts = token_sequence(tokens)
     g = build_grammar()
-    #g.print_production_ids()
+    g.print_production_ids()
 
     #parser = guided_ll1_parser(g)
     #parser.parse(ts)
 
     predict_alg = predict_algorithm(g)
-    #print("é LL1: ", ll1_check.is_ll1(g, predict_alg))
+    #print(ll1_check.is_ll1(g, predict_alg))
     program(ts, predict_alg)
 
+    """pred_alg = predict_algorithm(g)
+    #print(ll1_check.is_ll1(g, pred_alg))
+    parser = Parser(entrada)
+    try:
+        program(parser, pred_alg)
+        if parser.token_atual.tipo == tipo_token.FIM:
+            print("Análise sintática concluída com sucesso!")
+        else:
+            print("Erro na análise sintática")
+    except SyntaxError as e:
+        print(e)
+    """
 
+#teste github desktop
 if __name__ == "__main__":
     main()

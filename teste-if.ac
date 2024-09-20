@@ -1,0 +1,6 @@
+int _x ;
+int _h ;
+if ( x < 4 ) { _h = h + 1
+_x = x + 1
+ }
+else { _x = 2 }
